@@ -4,6 +4,7 @@ import os
 import time
 import sys
 import shutil
+import h5py
 import numpy             as np
 import matplotlib.pyplot as plt
 import pandas            as pd
@@ -16,6 +17,7 @@ from rfast_routines      import gen_spec_grid
 from rfast_routines      import inputs
 from rfast_routines      import init
 from rfast_routines      import init_3d
+from rfast_routines      import readdat
 from rfast_atm_routines  import set_gas_info
 from rfast_atm_routines  import setup_atm
 from rfast_atm_routines  import mmr2vmr
@@ -24,6 +26,43 @@ from rfast_opac_routines import opacities_info
 from rfast_user_models   import surfalb
 from rfast_user_models   import cloud_optprops
 from rfast_user_models   import cloud_struct
+from rfast_user_models   import surfalb_fast
+from rfast_user_models   import cloud_optprops_fast
+
+## FROM RFAST_ANALYZE_PP
+## Need this to make mcmc restart from the .h5 file and run steps until the
+## Number of steps is reached
+
+# simple routine for importing emcee chain from h5 file
+def reademceeh5(fn,nburn,thin,flatten=False):
+
+  # open file, important data
+  hf       = h5py.File(fn,'r')
+  grps     = [item for item in hf['mcmc'].values()]
+
+  # extract samples chain and log-likelihood, remove burn-in
+  if (nburn >= 0):
+    samples  = grps[1][nburn:,:,:]
+    lnprob   = grps[2][nburn:,:]
+  else:
+    samples  = grps[1][nburn:,:,:]
+    lnprob   = grps[2][nburn:,:]
+
+  # thin
+  samples  = samples[0::thin,:,:]
+  lnprob   = lnprob[0::thin,:]
+
+  # flatten
+  if flatten:
+    samples  = samples.reshape(samples.shape[0]*samples.shape[1],samples.shape[2])
+    lnprob   = lnprob.reshape(lnprob.shape[0]*lnprob.shape[1])
+
+  # close h5 file
+  hf.close()
+
+  return samples,lnprob
+  
+## END RFAST_ANALYZE_PP
 
 # recommended to prevent interference with emcee parallelization
 #os.environ["OMP_NUM_THREADS"] = "1"
@@ -33,6 +72,14 @@ if len(sys.argv) >= 2:
   filename_scr = sys.argv[1] # if script name provided at command line
 else:
   filename_scr = input("rfast inputs script filename: ") # otherwise ask for filename
+
+# Max adding this to make sure I generate the spectrum
+
+right = input('Did you generate a spectrum and add error?: (y/n): ')
+
+if right != 'y':
+	print('\nRun rfast_genspec.py and/or rfast_noise.py\n')
+	quit()
 
 # obtain input parameters from script
 fnr,fnn,fns,dirout,Nlev,pmin,pmax,bg,\
@@ -48,6 +95,21 @@ alpha,ntg,\
 Ts,Rs,\
 ntype,snr0,lam0,rnd,\
 clr,fmin,mmrr,nwalkers,nstep,nburn,thin,restart,progress = inputs(filename_scr)
+
+## AREA WHERE MAX IS TRYING TO LOAD FILES ONCE AT THE START
+  
+# Load all surface and cloud files
+granite = pd.read_csv('granite_solid.csv')
+open_ocean = pd.read_csv('open_ocean_usgs.csv')
+weathered_basalt = pd.read_csv('basalt_weathered_usgs.csv')
+liq_cloud_data = readdat(opdir+'strato_cum.mie',19)
+ice_cloud_data = readdat(opdir+'baum_cirrus_de100.mie',1)
+
+# If we're restarting from a .h5 file, check out current step
+if restart:
+# Find how many steps have been completed already in .h5
+  samples_for_restart, lnprob_for_restart = reademceeh5(dirout+fnr+'.h5',0,1) # Last variables are burnin and thin
+  current_step = samples_for_restart.shape[0]
 
 #CHECKED VALUES:
 #pmax = 10100.0
@@ -297,10 +359,10 @@ def Fx(x,y):
   #goes through setup_atm from rfast_atm_routines here
 
   # surface albedo model
-  As = surfalb(Apars,lam)[0]
+  As = surfalb_fast(Apars,lam,granite,open_ocean,weathered_basalt)[0]
 
   # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
-  gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam)
+  gc,wc,Qc = cloud_optprops_fast(opars,cld,opdir,lam,liq_cloud_data,ice_cloud_data)
 
   # cloud vertical structure model
   dtauc0,atm = cloud_struct(cpars,cld,p,t,z,grav,f,fb,m)
@@ -359,19 +421,23 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
 # ensure the cloud top pressure and change in cloud pressure sum to less than pmax
 ##added from previous code, ensures that the clouds aren't on the surface
-  while sum(pt_pos)+sum(dpc_pos) >= sum(pmax_pos): #this condition is not called, code jumps straight to pos under else:
-    lpN2_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpO2_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpH2O_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpO3_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCO2_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCO_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCH4_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    pmax_pos  = [10**i for i in lpN2_pos]+[10**i for i in lpO2_pos]+[10**i for i in lpH2O_pos]+[10**i for i in lpO3_pos]+[10**i for i in lpCO2_pos]+[10**i for i in lpCO_pos]+[10**i for i in lpCH4_pos]
-    ldpc_pos   = [np.random.uniform(low=ldpclower, high=ldpcupper) for i in range(nwalkers)]
-    dpc_pos    = [10**x for x in ldpc_pos]
-    lpt_pos    = [np.random.uniform(low=lptlower, high=lptupper) for i in range(nwalkers)]
-    pt_pos     = [10**x for x in lpt_pos]
+  #while (sum(pt_pos)+sum(dpc_pos) >= sum(pmax_pos))or(10**lA0_pos+10**lA1_pos>=1.0): #this condition is not called, code jumps straight to pos under else:
+  for i in range(nwalkers):
+      while (pt_pos[i]+dpc_pos[i] >= pmax_pos[i])or(10**lA0_pos[i]+10**lA1_pos[i]>=1.0):
+          lpN2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpO2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpH2O_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpO3_pos[i]   = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCO2_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCO_pos[i]   = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCH4_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lA0_pos[i]    = np.random.uniform(low=lA0lower, high=lA0upper)
+          lA1_pos[i]    = np.random.uniform(low=lA1lower, high=lA1upper)
+          pmax_pos[i]  = 10**lpN2_pos[i]+10**lpO2_pos[i]+10**lpH2O_pos[i]+10**lpO3_pos[i]+10**lpCO2_pos[i]+10**lpCO_pos[i]+10**lpCH4_pos[i]
+          ldpc_pos[i]   = np.random.uniform(low=ldpclower, high=ldpcupper)
+          dpc_pos[i]    = 10**ldpc_pos[i] 
+          lpt_pos[i]    = np.random.uniform(low=lptlower, high=lptupper)
+          pt_pos[i]     = 10**lpt_pos[i]
   else:
     pos = np.vstack([lpN2_pos, lpO2_pos, lpH2O_pos, lpO3_pos, lpCO2_pos, lpCO_pos, lpCH4_pos, lA0_pos, lA1_pos, lRp_pos, lMp_pos, ldpc_pos, lpt_pos, ltauc0_pos, lfc_pos]).T
     #why the transpose?
@@ -472,9 +538,12 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
     else:
       print('redirected to added condition')
+      
       sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, backend=new_backend, pool=pool, moves=[(emcee.moves.DEMove(sigma=5e-04, gamma0=2.38/np.sqrt(2*ndim)), 0.8), (emcee.moves.DESnookerMove(gammas=2.0), 0.2),])
-
-      sampler.run_mcmc(None, 20000, progress = progress) #should 
+      
+      # run mcmc for as many steps as needed to reach nstep
+      extra_steps = nstep - current_step
+      sampler.run_mcmc(None, extra_steps, progress = progress)
 
     tend = time.time()
     print('Retrieval timing (s): ',tend-tstart)

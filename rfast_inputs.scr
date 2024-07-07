@@ -15,7 +15,7 @@ src       = diff     # source type: 'diff','thrm','scnd','cmbn','trns','phas'
 Nlev      = 50       # number of atmospheric levels
 pmin      = 1.00e0   # top of atmosphere pressure (Pa)
 pmax      = 1.01e5   # bottom of atmosphere pressure (Pa)
-bg        = ar       # background gas ('ar','ch4','co2','h2','he','n2','o2')
+bg        = n2       # background gas ('ar','ch4','co2','h2','he','n2','o2')
 species_r = n2,o2,h2o,o3,co2,co,ch4                   # radiatively-active species; from: ar,n2,o2,h2o,o3,co2,ch4,h2,he,n2o,co,so2,nh3,c2h2
 f0        = 0.78,0.21,3.e-3,7.e-7,4.e-4,1e-8,2.e-6      # vmrs for active gases; **same order as species_r**
 rdgas     = False            # read gas volume mixing ratio profiles from file?
@@ -65,7 +65,7 @@ phfc      = 0             # 0 = HG | 1 = TTHG cloud phase function; only if 'pha
 opars     =               # cloud optics properties, assumed 50/50 liquid/ice water in rfast_user_models
 cpars     = 6.e4,1.e4,10. # cloud vertical structure parameters; pt,dpc,tauc0, see rfast_user_models
 lamc0     = 0.55          # wavelength where tauc0 is specified (um)
-fc        = 0.2          # cloud fraction
+fc        = 0.5           # cloud fraction
 #
 # general flags to toggle on/off certain treatments
 #
@@ -101,12 +101,12 @@ rnd       = False    # randomize error bars or simply center on truth?
 #
 # parameters for retrieval calculation
 #
-nwalkers  = 100       # emcee, number of walkers
-nstep     = 20000       # emcee, number of steps
-nburn     = 80000        # emcee, number of burn-in steps; negative -> count from end
-thin      = 200        # emcee, thinning parameter
-clr       = False    # it true, retrieval operates in center-log ratio
+nwalkers  = 100      # emcee, number of walkers
+nstep     = 200000   # emcee, number of steps
+nburn     = 100000   # emcee, number of burn-in steps; negative -> count from end
+thin      = 100      # emcee, thinning parameter
+clr       = False    # if true, retrieval operates in center-log ratio
 fmin      = 1e-12    # minimim mixing ratio for clr priors, benneke & seager (2012)
 mmrr      = False    # if true, retrieval operates in mass mixing ratios
 progress  = True     # display emcee progress bar?
-restart   = True    # restart emcee from fn + '.h5' backends file?
+restart   = False    # restart emcee from fn + '.h5' backends file?
