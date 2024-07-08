@@ -42,7 +42,7 @@ def atm_temp(tpars,p,Ngas,gasid,f,fb,mmr,m,mb):
 
   return t,t0
 
-#
+# GREY SURFACE ALBEDO MODEL
 # user-defined surface albedo model
 #
 # user note: must output vector with length Nlam of lower-boundary albedos
@@ -53,6 +53,33 @@ def atm_temp(tpars,p,Ngas,gasid,f,fb,mmr,m,mb):
 #         lam   - wavelength array (um)
 #   surface1/2 - str of the names of input surfaces for forward model
 #
+
+def surfalb(Apars,lam):
+
+	# unpack user-defined albedo parameters; must agree with rfast_inputs
+  A0 = Apars
+
+  # number of wavelength points
+  Nlam  = lam.shape[0]
+  
+  As = np.zeros(Nlam) #grey albedo model
+  As[:] = A0
+  
+  return As
+	
+
+# LAND FRACTION SURFACE ALBEDO MODEL: GRANITE, BASALT
+# user-defined surface albedo model
+#
+# user note: must output vector with length Nlam of lower-boundary albedos
+#
+# inputs:
+#
+#       Apars   - parameters for surface albedo model, must agree w/rfast_inputs.scr
+#         lam   - wavelength array (um)
+#   surface1/2 - str of the names of input surfaces for forward model
+#
+'''
 def surfalb(Apars,lam): 
 
   ########################
@@ -125,6 +152,7 @@ def surfalb(Apars,lam):
   ########################
 
   return As, surface_1, surface_2, surface_3, name1, name2, name3
+'''
 
 #
 #

@@ -83,11 +83,16 @@ if (src == 'phas'):
 data_out = Table([lam,dlam,F1,F2,data,err], names=names)
 ascii.write(data_out,dirout+fnn+'.dat',format='fixed_width',overwrite=True)
 
+# Stuff for multiple surfaces
+'''
 from rfast_genspec_alb import name1, name2
 
 #output as .csv for my own purposes
-ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'cerr_A0_'+str(Apars[0])+'.csv',overwrite=True)
+ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'cerr_A0_'+str(Apars)+'.csv',overwrite=True)
+'''
 
+# Above writing, but for the gray surface case (important for spectra_gen)
+ascii.write(data_out,dirout+'grey_surf'+'cerr_A0_'+str(Apars.item())+'.csv',overwrite=True)
 
 # document parameters to file
 shutil.copy(filename_scr,dirout+fnn+'.log')

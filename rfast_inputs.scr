@@ -55,7 +55,7 @@ opdir     =          # path to hi-res opacities folder
 Rp        = 1.0      # planet radius (Re)
 Mp        = 1.0      # planet mass (Me)
 a         = 1.0      # orbit distance (au)
-Apars     = 0.1,0.2      # surface albedo, fractional land coverage as of april 24th
+Apars     = 0.1      # Wavelength independent surface albedo
 em        = 1.0      # surface emissivity
 #
 # parameters defining cloud model
@@ -102,8 +102,8 @@ rnd       = False    # randomize error bars or simply center on truth?
 # parameters for retrieval calculation
 #
 nwalkers  = 100      # emcee, number of walkers
-nstep     = 200000   # emcee, number of steps
-nburn     = 100000   # emcee, number of burn-in steps; negative -> count from end
+nstep     = 100000   # emcee, number of steps
+nburn     = 50000    # emcee, number of burn-in steps; negative -> count from end
 thin      = 100      # emcee, thinning parameter
 clr       = False    # if true, retrieval operates in center-log ratio
 fmin      = 1e-12    # minimim mixing ratio for clr priors, benneke & seager (2012)

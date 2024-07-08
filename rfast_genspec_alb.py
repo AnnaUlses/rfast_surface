@@ -79,36 +79,36 @@ p,t,t0,z,grav,f,fb,m,nu = setup_atm(Nlev,Ngas,gasid,mmw0,pmin,pmax,
 #tstartp = time.time()
 
 albedo_model = surfalb(Apars,lam_hr)
-As = albedo_model[0] #returns the parametrisation
+As = albedo_model#[0] #returns the parametrisation
 
 if any(As) > 1:
   print('Warning: albedo values larger than 1')
   quit()
 
-surface_1 = albedo_model[1] #interpolated reflectance data for first material
-surface_2 = albedo_model[2] #interpolated reflectance data for second material 
-surface_3 = albedo_model[3] #interpolated reflectance data for third material
+#surface_1 = albedo_model[1] #interpolated reflectance data for first material
+#surface_2 = albedo_model[2] #interpolated reflectance data for second material 
+#surface_3 = albedo_model[3] #interpolated reflectance data for third material
 
-name1 = albedo_model[4] #names of the surfaces for plotting
-name2 = albedo_model[5]
-name3 = albedo_model[6]
+#name1 = albedo_model[4] #names of the surfaces for plotting
+#name2 = albedo_model[5]
+#name3 = albedo_model[6]
 
-print('Run parameters: ', name1, name2, name3)
-print('Land fractions = ', Apars)
-print('Ocean fractions = ', (1 - Apars[0] - Apars[1]))
-print('Cloud coverage = ', fc)
+#print('Run parameters: ', name1, name2, name3)
+#print('Land fractions = ', Apars)
+#print('Ocean fractions = ', (1 - Apars[0] - Apars[1]))
+#print('Cloud coverage = ', fc)
 
 #plot the interpolated reflectance spectra
-plt.plot(lam_hr, surface_1, label = name1, color = 'palevioletred')
-plt.plot(lam_hr, surface_2, label = name2, color = 'mediumslateblue')
-plt.plot(lam_hr, surface_3, label = name3, color = 'mediumseagreen')
-plt.title('Interpolations')
-plt.grid(alpha = 0.5)
-plt.ylabel('Reflectance')
-plt.xlabel('Wavelength ($\mu$m)')
-plt.legend()
-plt.savefig(dirout+'{}_{}'.format(name1,name2)+'_Interp'+'.png',format='png',bbox_inches='tight')
-plt.close()
+#plt.plot(lam_hr, surface_1, label = name1, color = 'palevioletred')
+#plt.plot(lam_hr, surface_2, label = name2, color = 'mediumslateblue')
+#plt.plot(lam_hr, surface_3, label = name3, color = 'mediumseagreen')
+#plt.title('Interpolations')
+#plt.grid(alpha = 0.5)
+#plt.ylabel('Reflectance')
+#plt.xlabel('Wavelength ($\mu$m)')
+#plt.legend()
+#plt.savefig(dirout+'{}_{}'.format(name1,name2)+'_Interp'+'.png',format='png',bbox_inches='tight')
+#plt.close()
 
 # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
 gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam_hr)
@@ -151,7 +151,7 @@ data_out = Table([lam,dlam,F1,F2], names=names)
 ascii.write(data_out,dirout+fns+'.raw',format = 'fixed_width', overwrite = True)
 
 #modified data write line only for albedo_modeling.py purposes
-ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'_A0_'+str(Apars[0])+'.csv', overwrite = True)
+#ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'_A0_'+str(Apars)+'.csv', overwrite = True)
 
 # document parameters to file
 shutil.copy(filename_scr,dirout+fns+'.log')
@@ -173,13 +173,13 @@ if (src == 'thrm'):
 if (src == 'trns'):
   ylab = r'Transit depth'
 
-fig, ax = plt.subplots()
-ax.plot(lam, F1, c = 'cornflowerblue')
-ax.set_ylabel(ylab)
-ax.grid(alpha = 0.5)
-ax.set_xlabel(r'Wavelength (' + u'\u03bc' + 'm)')
-ax.axvspan(0.7, 1.5, alpha = 0.3, color = 'palevioletred', label = 'NIR')
-ax.set_title('Surface Albedo Spectrum: {} & {}'.format(name1,name2))
-ax.legend()
-fig.savefig(dirout+'{}_{}_{}'.format(name1,name2,name3)+'.png',format='png',bbox_inches='tight', dpi = 150)
-plt.close()
+#fig, ax = plt.subplots()
+#ax.plot(lam, F1, c = 'cornflowerblue')
+#ax.set_ylabel(ylab)
+#ax.grid(alpha = 0.5)
+#ax.set_xlabel(r'Wavelength (' + u'\u03bc' + 'm)')
+#ax.axvspan(0.7, 1.5, alpha = 0.3, color = 'palevioletred', label = 'NIR')
+#ax.set_title('Surface Albedo Spectrum: {} & {}'.format(name1,name2))
+#ax.legend()
+#fig.savefig(dirout+'{}_{}_{}'.format(name1,name2,name3)+'.png',format='png',bbox_inches='tight', dpi = 150)
+#plt.close()
