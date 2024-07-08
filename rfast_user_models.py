@@ -42,7 +42,7 @@ def atm_temp(tpars,p,Ngas,gasid,f,fb,mmr,m,mb):
 
   return t,t0
 
-#
+# GREY SURFACE ALBEDO MODEL
 # user-defined surface albedo model
 #
 # user note: must output vector with length Nlam of lower-boundary albedos
@@ -53,6 +53,33 @@ def atm_temp(tpars,p,Ngas,gasid,f,fb,mmr,m,mb):
 #         lam   - wavelength array (um)
 #   surface1/2 - str of the names of input surfaces for forward model
 #
+
+def surfalb(Apars,lam):
+
+	# unpack user-defined albedo parameters; must agree with rfast_inputs
+  A0 = Apars
+
+  # number of wavelength points
+  Nlam  = lam.shape[0]
+  
+  As = np.zeros(Nlam) #grey albedo model
+  As[:] = A0
+  
+  return As
+	
+
+# LAND FRACTION SURFACE ALBEDO MODEL: GRANITE, BASALT
+# user-defined surface albedo model
+#
+# user note: must output vector with length Nlam of lower-boundary albedos
+#
+# inputs:
+#
+#       Apars   - parameters for surface albedo model, must agree w/rfast_inputs.scr
+#         lam   - wavelength array (um)
+#   surface1/2 - str of the names of input surfaces for forward model
+#
+'''
 def surfalb(Apars,lam): 
 
   ########################
@@ -73,7 +100,7 @@ def surfalb(Apars,lam):
   #snow = pd.read_csv('granular_snow.csv')
 
   #speclib sources, rocks
-  granite = pd.read_csv('granite_solid.csv', delim_whitespace = True)
+  granite = pd.read_csv('granite_solid.csv')
   #basalt = pd.read_csv('basalt.csv')
   #chalk = pd.read_csv('chalk.csv')
   #siltstone = pd.read_csv('siltstone.csv')
@@ -111,12 +138,13 @@ def surfalb(Apars,lam):
   #interpolate the datasets, while making sure they are the same dimensions over the same wavelength range
   #all reflectance values are loaded in as fractions (feb 15th learned the hard way)
   surface_1 = np.interp(lam, surface1.wave, surface1.ref)
-  surface_2 = np.interp(lam, surface2.wave, surface2.ref/100) 
+  surface_2 = np.interp(lam, surface2.wave, surface2.ref) 
   surface_3 = np.interp(lam, surface3.wave, surface3.ref)
 
   #define a combination of the two interpolated arrays, Apars is now land fraction
   As = Apars[0]*(surface_1) + Apars[1]*(surface_2) + (1 - Apars[0] - Apars[1])*(surface_3)
 
+  #print(As.shape)
   #As = np.zeros(Nlam) #grey albedo model
   #As[:] = A0
 
@@ -124,6 +152,7 @@ def surfalb(Apars,lam):
   ########################
 
   return As, surface_1, surface_2, surface_3, name1, name2, name3
+'''
 
 #
 #
@@ -307,3 +336,156 @@ def cloud_struct(cpars,cld,p,t,z,grav,f,fb,m):
   atm = p,t,z,grav,f,fb,m
 
   return dtauc0,atm
+  
+# Surface alb function that does not read from files every time
+# Takes in granite, ocean, and basalt data read from the files as parameters
+def surfalb_fast(Apars,lam,granite,open_ocean,weathered_basalt): 
+
+  ########################
+  ### user edits below ###
+
+  # unpack user-defined albedo parameters; must agree with rfast_inputs
+  A0 = Apars
+
+  # number of wavelength points
+  Nlam  = lam.shape[0]
+
+  # set surface flux albedo spectrum; currently grey
+  #import the different surfaces, data is stored under df.wave and df.ref for wavelength and reflectance respectively
+
+  #speclib sources, waters
+ # ice = pd.read_csv('ice.csv')
+  #sea_water = pd.read_csv('sea_water.csv')
+  #snow = pd.read_csv('granular_snow.csv')
+
+  #speclib sources, rocks
+  #granite = pd.read_csv('granite_solid.csv')
+  #basalt = pd.read_csv('basalt.csv')
+  #chalk = pd.read_csv('chalk.csv')
+  #siltstone = pd.read_csv('siltstone.csv')
+  #gneiss = pd.read_csv('biotite_gneiss.csv')
+
+  #speclib sources, photosynthetic vegetation
+  #grass = pd.read_csv('grass.csv')
+  #forest = pd.read_csv('forest.csv')
+  #shrub = pd.read_csv('shrub.csv')
+
+  #usgs surfaces
+  #water_ice = pd.read_csv('water_ice_usgs.csv')
+  #open_ocean = pd.read_csv('open_ocean_usgs.csv')
+  #melting_ocean = pd.read_csv('melting_snow_usgs.csv')
+  #weathered_basalt = pd.read_csv('basalt_weathered_usgs.csv')
+  #fresh_basalt = pd.read_csv('basalt_fresh_usgs.csv')
+  #granite_h2 = pd.read_csv('granite_h2.csv')
+
+  #minerals
+  #quartz = pd.read_csv('quartz.csv')
+  #k_spar = pd.read_csv('k_feldspar.csv')
+  #quartz_sand = pd.read_csv('quartz_sand.csv')
+
+
+  #just load in the files of interest at any given time, uncomment them from above
+  surface1 = weathered_basalt
+  surface2 = granite
+  surface3 = open_ocean
+
+
+  name1 = 'Weathered basalt' #names of the surfaces for plotting
+  name2 = 'Granite'
+  name3 = 'Ocean'
+  
+  #interpolate the datasets, while making sure they are the same dimensions over the same wavelength range
+  #all reflectance values are loaded in as fractions (feb 15th learned the hard way)
+  surface_1 = np.interp(lam, surface1.wave, surface1.ref)
+  surface_2 = np.interp(lam, surface2.wave, surface2.ref) 
+  surface_3 = np.interp(lam, surface3.wave, surface3.ref)
+
+  #define a combination of the two interpolated arrays, Apars is now land fraction
+  As = Apars[0]*(surface_1) + Apars[1]*(surface_2) + (1 - Apars[0] - Apars[1])*(surface_3)
+
+  #print(As.shape)
+  #As = np.zeros(Nlam) #grey albedo model
+  #As[:] = A0
+
+  ### user edits above ### 
+  ########################
+
+  return As, surface_1, surface_2, surface_3, name1, name2, name3
+  
+  
+# Cloud optical properties function that doesn't read from files every call
+# Takes liquid and ice cloud data read from files as parameters
+def cloud_optprops_fast(opars,cld,opdir,lam,liq_data,ice_data):
+
+  # zero-out outputs
+  gc1  = np.zeros(len(lam))
+  gc2  = np.zeros(len(lam))
+  gc3  = np.zeros(len(lam))
+  wc   = np.zeros(len(lam))
+  Qc   = np.zeros(len(lam))
+
+  # if doing clouds
+  if cld:
+
+    ########################
+    ### user edits below ###
+
+    # example grey three-moment cloud setup
+
+    # unpack user-defined cloud optical propert parameters; must agree with rfast_inputs
+    #opars = w,g1,g2,g3
+    #gc1 = np.zeros(len(lam))
+    #gc2 = np.zeros(len(lam))
+    #gc3 = np.zeros(len(lam))
+    #wc  = np.zeros(len(lam))
+    #Qc  = np.zeros(len(lam))
+    #gc1[:] = g1
+    #gc2[:] = g2
+    #gc3[:] = g3
+    #wc[:]  = w
+    #Qc[:]  = 1
+
+    # example 50/50 blend of Earth-like water liquid and ice clouds
+
+    # liquid
+    data     = liq_data
+    lam_in   = data[:,0]
+    w_in     = data[:,9]
+    g_in     = data[:,10]
+    q_in     = data[:,6]
+    w_interp = interpolate.interp1d(lam_in,w_in,assume_sorted=True,fill_value="extrapolate")
+    g_interp = interpolate.interp1d(lam_in,g_in,assume_sorted=True,fill_value="extrapolate")
+    q_interp = interpolate.interp1d(lam_in,q_in,assume_sorted=True,fill_value="extrapolate")
+    wcl      = w_interp(lam)
+    gcl      = g_interp(lam)
+    qcl      = q_interp(lam)
+    # ice
+    data     = ice_data
+    lam_in   = data[:,0]
+    w_in     = data[:,1]
+    g_in     = data[:,2]
+    q_in     = data[:,3]
+    w_interp = interpolate.interp1d(lam_in,w_in,assume_sorted=True,fill_value="extrapolate")
+    g_interp = interpolate.interp1d(lam_in,g_in,assume_sorted=True,fill_value="extrapolate")
+    q_interp = interpolate.interp1d(lam_in,q_in,assume_sorted=True,fill_value="extrapolate")
+    wci      = w_interp(lam)
+    gci      = g_interp(lam)
+    qci      = q_interp(lam)
+    # 50/50 mixture
+    f      = 0.5
+    wc     = f*wcl + (1-f)*wci
+    Qc     = f*qcl + (1-f)*qci
+    gc     = np.zeros(len(lam))
+    gc1    = f*gcl + (1-f)*gci
+    gc2    = np.zeros(len(lam))
+    gc2[:] = 0.79 # only used if src = 'phas'
+    gc3    = np.zeros(len(lam))
+    gc3[:] = 0.67 # only used if src = 'phas'
+
+    ### user edits above ###
+    ########################
+
+  # package together first and second moments
+  gc = gc1,gc2,gc3
+
+  return gc,wc,Qc

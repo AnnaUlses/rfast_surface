@@ -126,7 +126,8 @@ opacities_info(opdir)
 sigma_interp,cia_interp,ncia,ciaid,kern = init(lam,dlam,lam_hr,species_l,species_c,opdir,pf,tf,mode=mode)
 
 # surface albedo model
-As = surfalb(Apars,lam_hr)[0]
+Apars = Apars.item() # For some reason its reading as a length 1 numpy array
+As = surfalb(Apars,lam_hr)
 
 # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
 gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam_hr)
@@ -140,8 +141,8 @@ threeD   = init_3d(src,ntg)
 
 # package parameters for user-defined routines
 tiso = tpars[0]
-A0 = Apars[0]
-A1 = Apars[1]
+A0 = Apars#[0]
+#A1 = Apars[1]
 # no parameters for cloud optical properties model
 pt,dpc,tauc0 = cpars
 
@@ -170,13 +171,13 @@ lfCH4 = np.log10(10**lpCH4/pmax)
 fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4 = 10**lfN2,10**lfO2,10**lfH2O,10**lfO3,10**lfCO2,10**lfCO,10**lfCH4
 
 
-lRp,lMp,lfc,lA0,lA1,ldpc,lpt,ltauc0 = np.log10(Rp),np.log10(Mp),np.log10(fc),np.log10(A0),np.log10(A1),np.log10(dpc),np.log10(pt),np.log10(tauc0)
+lRp,lMp,lfc,lA0,ldpc,lpt,ltauc0 = np.log10(Rp),np.log10(Mp),np.log10(fc),np.log10(A0),np.log10(dpc),np.log10(pt),np.log10(tauc0)
 
-pp_names  = [r"$\log\,$"+r"$p_{\rm N2}$",r"$\log\,$"+r"$p_{\rm O2}$",r"$\log\,$"+r"$p_{\rm H2O}$",r"$\log\,$"+r"$p_{\rm O3}$",r"$\log\,$"+r"$p_{\rm CO2}$",r"$\log\,$"+r"$p_{\rm CO}$",r"$\log\,$"+r"$p_{\rm CH4}$",r"$\log\,$"+r"$f_{Wbasalt}$",r"$\log\,$"+r"$f_{Granite}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$"]
+pp_names  = [r"$\log\,$"+r"$p_{\rm N2}$",r"$\log\,$"+r"$p_{\rm O2}$",r"$\log\,$"+r"$p_{\rm H2O}$",r"$\log\,$"+r"$p_{\rm O3}$",r"$\log\,$"+r"$p_{\rm CO2}$",r"$\log\,$"+r"$p_{\rm CO}$",r"$\log\,$"+r"$p_{\rm CH4}$",r"$\log\,$"+r"$f_{A_{0}}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$"]
 vmr_names  = [r"$\log\,$"+r"$f_{\rm N2}$",r"$\log\,$"+r"$f_{\rm O2}$",r"$\log\,$"+r"$f_{\rm H2O}$",r"$\log\,$"+r"$f_{\rm O3}$",r"$\log\,$"+r"$f_{\rm CO2}$",r"$\log\,$"+r"$f_{\rm CO}$",r"$\log\,$"+r"$f_{\rm CH4}$",r"$\log\,$"+r"$A_{\rm 0}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$",r"$\log\,$"+r"$p_{0}$"]
 
 
-pp_truths = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc]
+pp_truths = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc]
 vmr_truths = [lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc,lpmax] #lpmax is listed as p0 in vmr_names
 
 
@@ -226,7 +227,6 @@ for i in range(ndim):
 plt.savefig('walkers/_walkers_no_burnin_thin.png',format='png', bbox_inches='tight')
 plt.close()
 
-
 # plot the corner plot
 fig = corner.corner(samples.reshape((-1,ndim)), quantiles=[0.16, 0.5, 0.84], show_titles=True,
                     color='black', labels=pp_names, truths=pp_truths)
@@ -240,6 +240,8 @@ flat = samples.reshape((-1,ndim))
 frac_label = pp_names[7]
 frac_truth = pp_truths[7]
 
+# Land fraction stuff
+'''
 land1 = 10**(flat[:,7]).reshape(-1,1)
 land2 = 10**(flat[:,8]).reshape(-1,1)
 
@@ -266,7 +268,7 @@ plt.close(fig)
 
 #corner plot including the total land fraction instead of the components
 #need to add summ variable to the samples chain in index 9
-
+'''
                     
 
 ##added below from the older code on january 11th
@@ -275,8 +277,8 @@ print(np.shape(old_array))
 nit = nstep*nwalkers
 
 print('nit =', nit)
-new_array = np.ones([nit,16]) #changed to nit+1
-new_array[:,:15] = old_array[:,:] #changed to nit
+new_array = np.ones([nit,15]) #changed to nit+1
+new_array[:,:14] = old_array[:,:] #changed to nit
 
 for k in range(0,nit): #converting back to vmr
     pmax = 10**old_array[k,0]+10**old_array[k,1]+10**old_array[k,2]+10**old_array[k,3]+10**old_array[k,4]+10**old_array[k,5]+10**old_array[k,6]
@@ -335,12 +337,12 @@ gp = -1 # reverts to using Mp if gp not retrieved
 # get best-fit parameters
 
 #lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lA0,lRp,lMp,dpc,lpt,ltauc0,lfc = samples[pos_max][0]
-fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,Rp,Mp,fc,A0,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(ldpc),10**(lpt),10**(ltauc0)
 f0[species_r=='N2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
 # package parameters for user-defined routines
 tpars = tiso
-Apars = A0,A1
+Apars = A0
 # no parameters for cloud optical properties model
 cpars = pt,dpc,tauc0
 

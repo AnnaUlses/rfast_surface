@@ -4,6 +4,7 @@ import os
 import time
 import sys
 import shutil
+import h5py
 import numpy             as np
 import matplotlib.pyplot as plt
 import pandas            as pd
@@ -16,6 +17,7 @@ from rfast_routines      import gen_spec_grid
 from rfast_routines      import inputs
 from rfast_routines      import init
 from rfast_routines      import init_3d
+from rfast_routines      import readdat
 from rfast_atm_routines  import set_gas_info
 from rfast_atm_routines  import setup_atm
 from rfast_atm_routines  import mmr2vmr
@@ -24,6 +26,43 @@ from rfast_opac_routines import opacities_info
 from rfast_user_models   import surfalb
 from rfast_user_models   import cloud_optprops
 from rfast_user_models   import cloud_struct
+from rfast_user_models   import surfalb_fast
+from rfast_user_models   import cloud_optprops_fast
+
+## FROM RFAST_ANALYZE_PP
+## Need this to make mcmc restart from the .h5 file and run steps until the
+## Number of steps is reached
+
+# simple routine for importing emcee chain from h5 file
+def reademceeh5(fn,nburn,thin,flatten=False):
+
+  # open file, important data
+  hf       = h5py.File(fn,'r')
+  grps     = [item for item in hf['mcmc'].values()]
+
+  # extract samples chain and log-likelihood, remove burn-in
+  if (nburn >= 0):
+    samples  = grps[1][nburn:,:,:]
+    lnprob   = grps[2][nburn:,:]
+  else:
+    samples  = grps[1][nburn:,:,:]
+    lnprob   = grps[2][nburn:,:]
+
+  # thin
+  samples  = samples[0::thin,:,:]
+  lnprob   = lnprob[0::thin,:]
+
+  # flatten
+  if flatten:
+    samples  = samples.reshape(samples.shape[0]*samples.shape[1],samples.shape[2])
+    lnprob   = lnprob.reshape(lnprob.shape[0]*lnprob.shape[1])
+
+  # close h5 file
+  hf.close()
+
+  return samples,lnprob
+  
+## END RFAST_ANALYZE_PP
 
 # recommended to prevent interference with emcee parallelization
 #os.environ["OMP_NUM_THREADS"] = "1"
@@ -49,14 +88,29 @@ Ts,Rs,\
 ntype,snr0,lam0,rnd,\
 clr,fmin,mmrr,nwalkers,nstep,nburn,thin,restart,progress = inputs(filename_scr)
 
+## AREA WHERE MAX IS TRYING TO LOAD FILES ONCE AT THE START
+  
+# Load all surface and cloud files
+#granite = pd.read_csv('granite_solid.csv')
+#open_ocean = pd.read_csv('open_ocean_usgs.csv')
+#weathered_basalt = pd.read_csv('basalt_weathered_usgs.csv')
+liq_cloud_data = readdat(opdir+'strato_cum.mie',19)
+ice_cloud_data = readdat(opdir+'baum_cirrus_de100.mie',1)
+
+# If we're restarting from a .h5 file, check out current step
+if restart:
+# Find how many steps have been completed already in .h5
+  samples_for_restart, lnprob_for_restart = reademceeh5(dirout+fnr+'.h5',0,1) # Last variables are burnin and thin
+  current_step = samples_for_restart.shape[0]
+
 #CHECKED VALUES:
 #pmax = 10100.0
 #species_r = n2, o2, h2o, o3, co2, co, ch4
 
 # unpackage parameters from user-defined routines
 tiso = tpars[0]
-A0 = Apars[0]
-A1 = Apars[1]
+# A0 = Apars[0]
+# A1 = Apars[1]
 # no parameters for cloud optical properties model
 pt,dpc,tauc0 = cpars
 
@@ -122,7 +176,7 @@ sigma_interp,cia_interp,ncia,ciaid,kern = init(lam,dlam,lam_hr,species_l,species
 
 
 # surface albedo model
-As = surfalb(Apars,lam_hr)[0] #redefined the outputs of this from the rfast_user_inputs on Jan 22nd
+As = surfalb(Apars,lam_hr) #only one argument returned by surfalb for grey surface
 
 # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
 gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam_hr)
@@ -141,7 +195,7 @@ if clr:
 gaslower,   gasupper   = 10**(-2.0), 10**(7.0)
 pmaxlower,  pmaxupper  = 1.,         1.e7
 A0lower,    A0upper    = 0.01,       1.
-A1lower,    A1upper    = 0.01,       1. #added april 30
+#A1lower,    A1upper    = 0.01,       1. #for land fraction surface albedo model
 Rplower,    Rpupper    = 10**(-0.5), 10**(0.5)
 Mplower,    Mpupper    = 0.1,        10.
 dpclower,   dpcupper   = 1.,         1.e7
@@ -152,7 +206,7 @@ fclower,    fcupper    = 0.001,      1.
 lgaslower,   lgasupper   = np.log10(gaslower),   np.log10(gasupper)
 lpmaxlower,  lpmaxupper  = np.log10(pmaxlower),  np.log10(pmaxupper)
 lA0lower,    lA0upper    = np.log10(A0lower),    np.log10(A0upper)
-lA1lower,    lA1upper    = np.log10(A1lower),    np.log10(A1upper) #for more than one albedo parameter
+#lA1lower,    lA1upper    = np.log10(A1lower),    np.log10(A1upper) #for more than one albedo parameter
 lRplower,    lRpupper    = np.log10(Rplower),    np.log10(Rpupper)
 lMplower,    lMpupper    = np.log10(Mplower),    np.log10(Mpupper)
 ldpclower,   ldpcupper   = np.log10(dpclower),   np.log10(dpcupper)
@@ -164,7 +218,7 @@ lfclower,    lfcupper    = np.log10(fclower),    np.log10(fcupper)
 
 # log-prior function
 def lnprior(x):
-  lpN2, lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #changed order to match initialised priors
+  lpN2, lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #changed order to match initialised priors
 
 ##added from previous code january 11th
 
@@ -180,7 +234,7 @@ def lnprior(x):
 
 ##^^^^
   
-  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(ldpc),10**(lpt),10**(ltauc0)
   f0[species_r=='n2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
   # sum gaussian priors
@@ -195,7 +249,6 @@ def lnprior(x):
      lgaslower   <= lpCO  <= lgasupper   and \
      lgaslower   <= lpCH4 <= lgasupper   and \
      A0lower    <= A0    <= A0upper    and \
-     A1lower    <= A1    <= A1upper    and \
      Rplower    <= Rp    <= Rpupper    and \
      Mplower    <= Mp    <= Mpupper    and \
      dpclower   <= dpc   <= dpcupper   and \
@@ -203,7 +256,6 @@ def lnprior(x):
      tauc0lower <= tauc0 <= tauc0upper and \
      fclower    <= fc    <= fcupper    and \
      np.sum(f0) <= 1                   and \
-     A0 + A1 <= 1 and \
      pt + dpc   <  pmax:
     return 0.0 + lng
   return -np.inf
@@ -215,7 +267,7 @@ def lnlike(x):
   # reverts to using Mp if gp is not retrieved
   gp = -1
 
-  lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #matches order of x above 
+  lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #matches order of x above 
 
 
 ##added from previous code january 11th
@@ -231,13 +283,13 @@ def lnlike(x):
 ##^^^^
   
   # not performing clr retrieval
-  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(ldpc),10**(lpt),10**(ltauc0)
 
   f0[species_r=='n2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
   # package parameters for user-defined routines
   tpars = tiso
-  Apars = A0,A1
+  Apars = A0#,A1
   # no parameters for cloud optical properties model
   cpars = pt,dpc,tauc0
 
@@ -296,11 +348,14 @@ def Fx(x,y):
                                       mmrr,mb,Mp,Rp,p10,fp10,src,ref,nu0,gp=gp)
   #goes through setup_atm from rfast_atm_routines here
 
-  # surface albedo model
-  As = surfalb(Apars,lam)[0]
+  # grey surface albedo model
+  As = surfalb(Apars,lam)
+
+  # multicomponent surface albedo model
+  # As = surfalb_fast(Apars,lam,granite,open_ocean,weathered_basalt)[0]
 
   # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
-  gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam)
+  gc,wc,Qc = cloud_optprops_fast(opars,cld,opdir,lam,liq_cloud_data,ice_cloud_data)
 
   # cloud vertical structure model
   dtauc0,atm = cloud_struct(cpars,cld,p,t,z,grav,f,fb,m)
@@ -328,7 +383,7 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   gaslower,    gasupper    = 10**(-2.0),           10**(7.0)
   lgaslower,   lgasupper   = np.log10(gaslower),   np.log10(gasupper)
   lA0lower,    lA0upper    = np.log10(0.01),       np.log10(1.0)
-  lA1lower,    lA1upper    = np.log10(0.01),       np.log10(1.0)
+  #lA1lower,    lA1upper    = np.log10(0.01),       np.log10(1.0)
   lRplower,    lRpupper    = np.log10(10**(-0.5)), np.log10(10.0**(0.5))
   lMplower,    lMpupper    = np.log10(0.1),        np.log10(10.0)
   ldpclower,   ldpcupper   = np.log10(1.),         np.log10(1.e7)
@@ -345,7 +400,7 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   lpCO_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
   lpCH4_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
   lA0_pos    = [np.random.uniform(low=lA0lower, high=lA0upper) for i in range(nwalkers)]
-  lA1_pos    = [np.random.uniform(low=lA1lower, high=lA1upper) for i in range(nwalkers)]
+  #lA1_pos    = [np.random.uniform(low=lA1lower, high=lA1upper) for i in range(nwalkers)]
   lRp_pos    = [np.random.uniform(low=lRplower, high=lRpupper) for i in range(nwalkers)]
   lMp_pos    = [np.random.uniform(low=lMplower, high=lMpupper) for i in   range(nwalkers)]
   ldpc_pos   = [np.random.uniform(low=ldpclower, high=ldpcupper) for i in range(nwalkers)]
@@ -359,21 +414,25 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
 # ensure the cloud top pressure and change in cloud pressure sum to less than pmax
 ##added from previous code, ensures that the clouds aren't on the surface
-  while sum(pt_pos)+sum(dpc_pos) >= sum(pmax_pos): #this condition is not called, code jumps straight to pos under else:
-    lpN2_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpO2_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpH2O_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpO3_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCO2_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCO_pos   = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    lpCH4_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
-    pmax_pos  = [10**i for i in lpN2_pos]+[10**i for i in lpO2_pos]+[10**i for i in lpH2O_pos]+[10**i for i in lpO3_pos]+[10**i for i in lpCO2_pos]+[10**i for i in lpCO_pos]+[10**i for i in lpCH4_pos]
-    ldpc_pos   = [np.random.uniform(low=ldpclower, high=ldpcupper) for i in range(nwalkers)]
-    dpc_pos    = [10**x for x in ldpc_pos]
-    lpt_pos    = [np.random.uniform(low=lptlower, high=lptupper) for i in range(nwalkers)]
-    pt_pos     = [10**x for x in lpt_pos]
+  #while (sum(pt_pos)+sum(dpc_pos) >= sum(pmax_pos))or(10**lA0_pos+10**lA1_pos>=1.0): #this condition is not called, code jumps straight to pos under else:
+  for i in range(nwalkers):
+      while (pt_pos[i]+dpc_pos[i] >= pmax_pos[i]):
+          lpN2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpO2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpH2O_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpO3_pos[i]   = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCO2_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCO_pos[i]   = np.random.uniform(low=lgaslower, high=lgasupper)
+          lpCH4_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
+          lA0_pos[i]    = np.random.uniform(low=lA0lower, high=lA0upper)
+          #lA1_pos[i]    = np.random.uniform(low=lA1lower, high=lA1upper)
+          pmax_pos[i]  = 10**lpN2_pos[i]+10**lpO2_pos[i]+10**lpH2O_pos[i]+10**lpO3_pos[i]+10**lpCO2_pos[i]+10**lpCO_pos[i]+10**lpCH4_pos[i]
+          ldpc_pos[i]   = np.random.uniform(low=ldpclower, high=ldpcupper)
+          dpc_pos[i]    = 10**ldpc_pos[i] 
+          lpt_pos[i]    = np.random.uniform(low=lptlower, high=lptupper)
+          pt_pos[i]     = 10**lpt_pos[i]
   else:
-    pos = np.vstack([lpN2_pos, lpO2_pos, lpH2O_pos, lpO3_pos, lpCO2_pos, lpCO_pos, lpCH4_pos, lA0_pos, lA1_pos, lRp_pos, lMp_pos, ldpc_pos, lpt_pos, ltauc0_pos, lfc_pos]).T
+    pos = np.vstack([lpN2_pos, lpO2_pos, lpH2O_pos, lpO3_pos, lpCO2_pos, lpCO_pos, lpCH4_pos, lA0_pos, lRp_pos, lMp_pos, ldpc_pos, lpt_pos, ltauc0_pos, lfc_pos]).T
     #why the transpose?
   
   # inform user of key opacities information
@@ -410,8 +469,8 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
   # unpackage parameters from user-defined routines
   tiso = tpars[0]
-  A0 = Apars[0]
-  A1 = Apars[1]
+  A0 = Apars#[0]
+  #A1 = Apars[1]
   # no parameters for cloud optical properties model
   pt,dpc,tauc0 = cpars
 
@@ -427,9 +486,9 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   lpCO2 = np.log10((10**lfCO2)*pmax)
   lpCO  = np.log10((10**lfCO)*pmax)
   lpCH4 = np.log10((10**lfCH4)*pmax)
-  lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = np.log10(A0),np.log10(A1),np.log10(Rp),np.log10(Mp),np.log10(dpc),np.log10(pt),np.log10(tauc0),np.log10(fc)
+  lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc = np.log10(A0),np.log10(Rp),np.log10(Mp),np.log10(dpc),np.log10(pt),np.log10(tauc0),np.log10(fc)
 
-  guess = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc] #consistent with the paper
+  guess = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc] #consistent with the paper
   #same order as the x variables in prob and prior functions
   #want to initialise the walkers around these values?
 
@@ -472,9 +531,12 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
     else:
       print('redirected to added condition')
+      
       sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, backend=new_backend, pool=pool, moves=[(emcee.moves.DEMove(sigma=5e-04, gamma0=2.38/np.sqrt(2*ndim)), 0.8), (emcee.moves.DESnookerMove(gammas=2.0), 0.2),])
-
-      sampler.run_mcmc(None, 20000, progress = progress) #should 
+      
+      # run mcmc for as many steps as needed to reach nstep
+      extra_steps = nstep - current_step
+      sampler.run_mcmc(None, extra_steps, progress = progress)
 
     tend = time.time()
     print('Retrieval timing (s): ',tend-tstart)
