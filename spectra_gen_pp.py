@@ -64,22 +64,25 @@ ndim     = samples.shape[2]
 #flatten the chain
 flatchain = samples.reshape(samples.shape[0] * samples.shape[1], samples.shape[2])
 
+# Code setting every chain value to the truth to check the way spectra are generated
+#real_values = [np.log10(0.78 * pmax), np.log10(0.21 * pmax), np.log10(3.e-3 * pmax), np.log10(7.e-7 * pmax), np.log10(4.e-4 * pmax), #np.log10(1.e-8 * pmax), np.log10(2.e-6 * pmax), -1, np.log10(0.2), 0, 0, np.log10(1.e4), np.log10(4.e6), 1, np.log10(0.5)]
+#for i in range(len(flatchain)):
+#	flatchain[i] = real_values
 
 F1_array = []
 
 data = pd.read_csv('Weathered basalt_Granitecerr_A0_0.1.csv', delim_whitespace = True)
 
 expected_F1 = np.array(data.albedo)
-
 expected_err = np.mean(data.uncertainty)
 
-r = random.sample(range(0, nstep*nwalkers), 1000)
+r = random.sample(range(0, nstep*nwalkers), 100 )
 n2 = []
 
 print_vals = False
-use_dat_file = True
+use_dat_file = False
 if use_dat_file == False:
-	for i in range(0,1000):
+	for i in range(0,100):
 		print('Walker ',i)
 		print('Sample ',r[i], '\n')
 		print('Albedo length is ',len(F1_array), '\n')
@@ -105,7 +108,7 @@ if use_dat_file == False:
   
 		n2,o2,h2o,o3,co2,co,ch4= 10**(lfn2),10**(lfo2),10**(lfh2o),10**(lfo3),10**(lfco2),10**(lfco),10**(lfch4)
 
-		f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = o2,h2o,o3,co2,co,ch4
+		f0[species_r=='n2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = n2,o2,h2o,o3,co2,co,ch4
 
 		# retrieved planetary parameters
 		A0     = 10**flatchain[r[i],7]
@@ -141,13 +144,15 @@ if use_dat_file == False:
 		p,t,t0,z,grav,f,fb,m,nu = setup_atm(Nlev,Ngas,gasid,mmw0,pmin,pmax,tpars,rdtmp,fntmp,skptmp,colt,colpt,psclt,
                                     	species_r,f0,rdgas,fnatm,skpatm,colr,colpr,psclr,
                                     	mmri,mb,Mp,Rp,p10,fp10,src,ref,nu0)
-
+		
+		Apars = A0,A1 # read albedo parameters from chains
 		As = surfalb(Apars,lam_hr)[0] #for forward model
 
         	# cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
 		gc,wc,Qc = cloud_optprops(opars,cld,opdir,lam_hr)
 
 		# cloud vertical structure model
+		cpars = pt,dpc,tauc0 # actually use chain values
 		dtauc0,atm = cloud_struct(cpars,cld,p,t,z,grav,f,fb,m)
 		p,t,z,grav,f,fb,m = atm
 
@@ -194,7 +199,7 @@ if use_dat_file == True:
 F1_array = np.asarray(F1_array)
 
 #reshape the spectra planet-to-star flux ratios into rows for each case, and remove NaN values from array
-spectra_samples = F1_array.reshape((1000,len(expected_F1)))
+spectra_samples = F1_array.reshape((100,len(expected_F1)))
 
 dat_rows, dat_cols = np.shape(spectra_samples)
 
