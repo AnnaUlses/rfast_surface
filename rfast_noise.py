@@ -85,8 +85,8 @@ ascii.write(data_out,dirout+fnn+'.dat',format='fixed_width',overwrite=True)
 
 from rfast_genspec_alb import name1, name2
 
-#output as .csv for my own purposes
-ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'cerr_A0_'+str(Apars[0])+'.csv',overwrite=True)
+#output as .csv for spectra_gen
+ascii.write(data_out,'data_error.csv',overwrite=True)
 
 
 # document parameters to file
@@ -103,5 +103,5 @@ plt.errorbar(lam, data, yerr=err, fmt=".k") #data should now be albedo
 plt.ylabel(ylab)
 plt.grid(alpha = 0.5)
 plt.xlabel(r'Wavelength (' + u'\u03bc' + 'm)')
-plt.savefig(dirout+fnn+'.png',format='png',bbox_inches='tight')
+plt.savefig('forward_model_noise.png',format='png',bbox_inches='tight')
 plt.close()

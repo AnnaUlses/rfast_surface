@@ -71,18 +71,18 @@ flatchain = samples.reshape(samples.shape[0] * samples.shape[1], samples.shape[2
 
 F1_array = []
 
-data = pd.read_csv('Weathered basalt_Granitecerr_A0_0.1.csv', delim_whitespace = True)
+data = pd.read_csv('data_error.csv', delim_whitespace = True)
 
 expected_F1 = np.array(data.albedo)
 expected_err = np.mean(data.uncertainty)
 
-r = random.sample(range(0, nstep*nwalkers), 100 )
+r = random.sample(range(0, nstep*nwalkers), 1000)
 n2 = []
 
 print_vals = False
 use_dat_file = False
 if use_dat_file == False:
-	for i in range(0,100):
+	for i in range(0,1000):
 		print('Walker ',i)
 		print('Sample ',r[i], '\n')
 		print('Albedo length is ',len(F1_array), '\n')
@@ -113,18 +113,24 @@ if use_dat_file == False:
 		# retrieved planetary parameters
 		A0     = 10**flatchain[r[i],7]
 		A1     = 10**flatchain[r[i],8]
-		Rp     = 10**flatchain[r[i],9]
-		Mp     = 10**flatchain[r[i],10]
-		dpc    = 10**flatchain[r[i],11]
-		pt     = 10**flatchain[r[i],12]
-		tauc0  = 10**flatchain[r[i],13]
-		fc     = 10**flatchain[r[i],14]
+		A2     = 10**flatchain[r[i],9]
+		A3     = 10**flatchain[r[i],10]
+		A4     = 10**flatchain[r[i],11]
+		Rp     = 10**flatchain[r[i],12]
+		Mp     = 10**flatchain[r[i],13]
+		dpc    = 10**flatchain[r[i],14]
+		pt     = 10**flatchain[r[i],15]
+		tauc0  = 10**flatchain[r[i],16]
+		fc     = 10**flatchain[r[i],17]
         
 
 		Ngas,gasid,mmw0,ray0,nu0,mb,rayb = set_gas_info(bg)
 		
-		print('A0 = ', A0)
-		print('A1 = ', A1)
+		print('WB = ', A0)
+		print('Kao = ', A1)
+		print('WG = ', A2)
+		print('Desert = ', A3)
+		print('Ice = ', A4)
         
         	# generate wavelength grids
 		Nres           = 3 # no. of res elements to extend beyond grid edges to avoid edge sensitivity (2--4)
@@ -145,7 +151,7 @@ if use_dat_file == False:
                                     	species_r,f0,rdgas,fnatm,skpatm,colr,colpr,psclr,
                                     	mmri,mb,Mp,Rp,p10,fp10,src,ref,nu0)
 		
-		Apars = A0,A1 # read albedo parameters from chains
+		Apars = A0,A1,A2,A3,A4 # read albedo parameters from chains
 		As = surfalb(Apars,lam_hr)[0] #for forward model
 
         	# cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
@@ -199,7 +205,7 @@ if use_dat_file == True:
 F1_array = np.asarray(F1_array)
 
 #reshape the spectra planet-to-star flux ratios into rows for each case, and remove NaN values from array
-spectra_samples = F1_array.reshape((100,len(expected_F1)))
+spectra_samples = F1_array.reshape((1000,len(expected_F1)))
 
 dat_rows, dat_cols = np.shape(spectra_samples)
 
@@ -243,19 +249,19 @@ if use_dat_file == True:
         
 ax = plt.subplot(1,1,1)
 
-ax.plot(lam, expected_F1, color='r')
+ax.plot(lam, expected_F1, color='r', label = 'True spectrum')
 #ax.plot(lam, ci_avg, color = 'g')
 #ax.errorbar(lam, expected_F2, yerr=expected_err, color = 'r', ecolor='r', linestyle ='-')
-ax.fill_between(lam, expected_err_upper, expected_err_lower, color = 'r', alpha = 0.5)
+ax.fill_between(lam, expected_err_upper, expected_err_lower, color = 'r', alpha = 0.5, label = '95% CI')
 #ax.fill_between(lam, expected_err_max, expected_err_upper, color = 'y', alpha = 0.5, label='_nolegend_')
 #ax.fill_between(lam, expected_err_lower, expected_err_bot, color = 'y', alpha = 0.5, label='_nolegend_')
-ax.plot(lam, ci_mid, color='b')
+ax.plot(lam, ci_mid, color='b', label = 'Retrieved spectrum')
 ax.fill_between(lam, ci_upper, ci_lower, color='b',  alpha=0.33, label='95% CI')
 #ax.fill_between(lam, ci_max, ci_bot, color = 'xkcd:sky blue', alpha = 0.33, label='100% CI')
 
-plt.legend(['Expected Albedo', 'Median Albedo From 95% CI','95% CI'])
+plt.legend(ncols = 2, loc = 'lower center')
 plt.ylabel('Albedo')
 plt.xlabel('Wavelength ($\mu$m)')
 plt.grid(alpha = 0.5)
-plt.savefig('spectra_gen.png', dpi=300)
+plt.savefig('spectra/spectra_gen.png', dpi=300)
 plt.close()

@@ -91,7 +91,7 @@ clr,fmin,mmrr,nwalkers,nstep,nburn,thin,restart,progress = inputs(filename_scr)
 ## AREA WHERE MAX IS TRYING TO LOAD FILES ONCE AT THE START
   
 # Load all surface and cloud files
-granite = pd.read_csv('granite_solid.csv')
+weathered_granite = pd.read_csv('granite_h2.csv')
 open_ocean = pd.read_csv('open_ocean_usgs.csv')
 weathered_basalt = pd.read_csv('basalt_weathered_usgs.csv')
 liq_cloud_data = readdat(opdir+'strato_cum.mie',19)
@@ -111,6 +111,9 @@ if restart:
 tiso = tpars[0]
 A0 = Apars[0]
 A1 = Apars[1]
+A2 = Apars[2]
+A3 = Apars[3]
+A4 = Apars[4]
 # no parameters for cloud optical properties model
 pt,dpc,tauc0 = cpars
 
@@ -194,8 +197,11 @@ if clr:
 #define priors for retreived parameters (from previous code added january 11th)
 gaslower,   gasupper   = 10**(-2.0), 10**(7.0)
 pmaxlower,  pmaxupper  = 1.,         1.e7
-A0lower,    A0upper    = 0.01,       1.
-A1lower,    A1upper    = 0.01,       1. #added april 30
+A0lower,    A0upper    = 0.0001,       1.
+A1lower,    A1upper    = 0.0001,       1.
+A2lower,    A2upper    = 0.0001,       1.
+A3lower,    A3upper    = 0.0001,       1. 
+A4lower,    A4upper    = 0.0001,       1.
 Rplower,    Rpupper    = 10**(-0.5), 10**(0.5)
 Mplower,    Mpupper    = 0.1,        10.
 dpclower,   dpcupper   = 1.,         1.e7
@@ -207,6 +213,9 @@ lgaslower,   lgasupper   = np.log10(gaslower),   np.log10(gasupper)
 lpmaxlower,  lpmaxupper  = np.log10(pmaxlower),  np.log10(pmaxupper)
 lA0lower,    lA0upper    = np.log10(A0lower),    np.log10(A0upper)
 lA1lower,    lA1upper    = np.log10(A1lower),    np.log10(A1upper) #for more than one albedo parameter
+lA2lower,    lA2upper    = np.log10(A2lower),    np.log10(A2upper)
+lA3lower,    lA3upper    = np.log10(A3lower),    np.log10(A3upper)
+lA4lower,    lA4upper    = np.log10(A4lower),    np.log10(A4upper)
 lRplower,    lRpupper    = np.log10(Rplower),    np.log10(Rpupper)
 lMplower,    lMpupper    = np.log10(Mplower),    np.log10(Mpupper)
 ldpclower,   ldpcupper   = np.log10(dpclower),   np.log10(dpcupper)
@@ -218,7 +227,7 @@ lfclower,    lfcupper    = np.log10(fclower),    np.log10(fcupper)
 
 # log-prior function
 def lnprior(x):
-  lpN2, lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #changed order to match initialised priors
+  lpN2, lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lA2,lA3,lA4,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #changed order to match initialised priors
 
 ##added from previous code january 11th
 
@@ -234,7 +243,7 @@ def lnprior(x):
 
 ##^^^^
   
-  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,A2,A3,A4,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(lA2),10**(lA3),10**(lA4),10**(ldpc),10**(lpt),10**(ltauc0)
   f0[species_r=='n2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
   # sum gaussian priors
@@ -250,6 +259,9 @@ def lnprior(x):
      lgaslower   <= lpCH4 <= lgasupper   and \
      A0lower    <= A0    <= A0upper    and \
      A1lower    <= A1    <= A1upper    and \
+     A2lower    <= A2    <= A2upper    and \
+     A3lower    <= A3    <= A3upper    and \
+     A4lower    <= A4    <= A4upper    and \
      Rplower    <= Rp    <= Rpupper    and \
      Mplower    <= Mp    <= Mpupper    and \
      dpclower   <= dpc   <= dpcupper   and \
@@ -257,7 +269,8 @@ def lnprior(x):
      tauc0lower <= tauc0 <= tauc0upper and \
      fclower    <= fc    <= fcupper    and \
      np.sum(f0) <= 1                   and \
-     A0 + A1 <= 1 and \
+     A0 + A1 + A2 + A3 + A4 < 1 and \
+     1 - A0 - A1 - A2 - A3 - A4 > 0 and \
      pt + dpc   <  pmax:
     return 0.0 + lng
   return -np.inf
@@ -269,7 +282,7 @@ def lnlike(x):
   # reverts to using Mp if gp is not retrieved
   gp = -1
 
-  lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #matches order of x above 
+  lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lA2,lA3,lA4,lRp,lMp,ldpc,lpt,ltauc0,lfc = x #matches order of x above 
 
 
 ##added from previous code january 11th
@@ -285,13 +298,13 @@ def lnlike(x):
 ##^^^^
   
   # not performing clr retrieval
-  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+  fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,pmax,Rp,Mp,fc,A0,A1,A2,A3,A4,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lpmax),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(lA2),10**(lA3),10**(lA4),10**(ldpc),10**(lpt),10**(ltauc0)
 
   f0[species_r=='n2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
   # package parameters for user-defined routines
   tpars = tiso
-  Apars = A0,A1
+  Apars = A0,A1,A2,A3,A4
   # no parameters for cloud optical properties model
   cpars = pt,dpc,tauc0
 
@@ -302,21 +315,10 @@ def lnlike(x):
        p10,fp10,src,threeD,fntmp,skptmp,colt,colpt,psclt,species_r,fnatm,skpatm,\
        colr,colpr,psclr,Nlev
   
-  return -0.5*(np.sum((dat-Fx(x0,y))**2/err**2)) #should this be changed to albedo?
+  return -0.5*(np.sum((albedo-Fx(x0,y))**2/err**2)) #should this be changed to albedo?
 
 
 # log-probability from Bayes theorem
-'''
-def lnprob(x):
-
-  lp = lnprior(x)
-  
-  if not np.isfinite(lp):
-    return -np.inf
-  return lp + lnlike(x)
-
-'''
-
 def lnprob(x):
   try:
       lp = lnprior(x)
@@ -351,7 +353,7 @@ def Fx(x,y):
   #goes through setup_atm from rfast_atm_routines here
 
   # surface albedo model
-  As = surfalb_fast(Apars,lam,granite,open_ocean,weathered_basalt)[0]
+  As = surfalb(Apars,lam_hr)[0]
 
   # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
   gc,wc,Qc = cloud_optprops_fast(opars,cld,opdir,lam,liq_cloud_data,ice_cloud_data)
@@ -381,8 +383,11 @@ def Fx(x,y):
 if __name__ == '__main__': #why do these have to be redefined if they were initialised outside a function previously
   gaslower,    gasupper    = 10**(-2.0),           10**(7.0)
   lgaslower,   lgasupper   = np.log10(gaslower),   np.log10(gasupper)
-  lA0lower,    lA0upper    = np.log10(0.01),       np.log10(1.0)
-  lA1lower,    lA1upper    = np.log10(0.01),       np.log10(1.0)
+  lA0lower,    lA0upper    = np.log10(0.0001),       np.log10(1.0)
+  lA1lower,    lA1upper    = np.log10(0.0001),       np.log10(1.0)
+  lA2lower,    lA2upper    = np.log10(0.0001),       np.log10(1.0)
+  lA3lower,    lA3upper    = np.log10(0.0001),       np.log10(1.0)
+  lA4lower,    lA4upper    = np.log10(0.0001),       np.log10(1.0)
   lRplower,    lRpupper    = np.log10(10**(-0.5)), np.log10(10.0**(0.5))
   lMplower,    lMpupper    = np.log10(0.1),        np.log10(10.0)
   ldpclower,   ldpcupper   = np.log10(1.),         np.log10(1.e7)
@@ -400,6 +405,9 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   lpCH4_pos  = [np.random.uniform(low=lgaslower, high=lgasupper) for i in range(nwalkers)]
   lA0_pos    = [np.random.uniform(low=lA0lower, high=lA0upper) for i in range(nwalkers)]
   lA1_pos    = [np.random.uniform(low=lA1lower, high=lA1upper) for i in range(nwalkers)]
+  lA2_pos    = [np.random.uniform(low=lA2lower, high=lA2upper) for i in range(nwalkers)]
+  lA3_pos    = [np.random.uniform(low=lA3lower, high=lA3upper) for i in range(nwalkers)]
+  lA4_pos    = [np.random.uniform(low=lA4lower, high=lA4upper) for i in range(nwalkers)]
   lRp_pos    = [np.random.uniform(low=lRplower, high=lRpupper) for i in range(nwalkers)]
   lMp_pos    = [np.random.uniform(low=lMplower, high=lMpupper) for i in   range(nwalkers)]
   ldpc_pos   = [np.random.uniform(low=ldpclower, high=ldpcupper) for i in range(nwalkers)]
@@ -415,7 +423,7 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 ##added from previous code, ensures that the clouds aren't on the surface
   #while (sum(pt_pos)+sum(dpc_pos) >= sum(pmax_pos))or(10**lA0_pos+10**lA1_pos>=1.0): #this condition is not called, code jumps straight to pos under else:
   for i in range(nwalkers):
-      while (pt_pos[i]+dpc_pos[i] >= pmax_pos[i])or(10**lA0_pos[i]+10**lA1_pos[i]>=1.0):
+      while (pt_pos[i]+dpc_pos[i] >= pmax_pos[i])or((10**lA0_pos[i]+10**lA1_pos[i]+10**lA2_pos[i]+10**lA3_pos[i]+10**lA4_pos[i])>1.0)or((1-10**lA0_pos[i]-10**lA1_pos[i]-10**lA2_pos[i]-10**lA3_pos[i]-10**lA4_pos[i])<0):
           lpN2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
           lpO2_pos[i] = np.random.uniform(low=lgaslower, high=lgasupper)
           lpH2O_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
@@ -425,14 +433,17 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
           lpCH4_pos[i]  = np.random.uniform(low=lgaslower, high=lgasupper)
           lA0_pos[i]    = np.random.uniform(low=lA0lower, high=lA0upper)
           lA1_pos[i]    = np.random.uniform(low=lA1lower, high=lA1upper)
+          lA2_pos[i]    = np.random.uniform(low=lA2lower, high=lA2upper)
+          lA3_pos[i]    = np.random.uniform(low=lA3lower, high=lA3upper)
+          lA4_pos[i]    = np.random.uniform(low=lA4lower, high=lA4upper)
           pmax_pos[i]  = 10**lpN2_pos[i]+10**lpO2_pos[i]+10**lpH2O_pos[i]+10**lpO3_pos[i]+10**lpCO2_pos[i]+10**lpCO_pos[i]+10**lpCH4_pos[i]
           ldpc_pos[i]   = np.random.uniform(low=ldpclower, high=ldpcupper)
           dpc_pos[i]    = 10**ldpc_pos[i] 
           lpt_pos[i]    = np.random.uniform(low=lptlower, high=lptupper)
           pt_pos[i]     = 10**lpt_pos[i]
   else:
-    pos = np.vstack([lpN2_pos, lpO2_pos, lpH2O_pos, lpO3_pos, lpCO2_pos, lpCO_pos, lpCH4_pos, lA0_pos, lA1_pos, lRp_pos, lMp_pos, ldpc_pos, lpt_pos, ltauc0_pos, lfc_pos]).T
-    #why the transpose?
+    pos = np.vstack([lpN2_pos, lpO2_pos, lpH2O_pos, lpO3_pos, lpCO2_pos, lpCO_pos, lpCH4_pos, lA0_pos, lA1_pos, lA2_pos, lA3_pos, lA4_pos, lRp_pos, lMp_pos, ldpc_pos, lpt_pos, ltauc0_pos, lfc_pos]).T
+
   
   # inform user of key opacities information
   opacities_info(opdir)
@@ -470,6 +481,9 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   tiso = tpars[0]
   A0 = Apars[0]
   A1 = Apars[1]
+  A2 = Apars[2]
+  A3 = Apars[3]
+  A4 = Apars[4]
   # no parameters for cloud optical properties model
   pt,dpc,tauc0 = cpars
 
@@ -485,9 +499,9 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
   lpCO2 = np.log10((10**lfCO2)*pmax)
   lpCO  = np.log10((10**lfCO)*pmax)
   lpCH4 = np.log10((10**lfCH4)*pmax)
-  lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc = np.log10(A0),np.log10(A1),np.log10(Rp),np.log10(Mp),np.log10(dpc),np.log10(pt),np.log10(tauc0),np.log10(fc)
+  lA0,lA1,lA2,lA3,lA4,lRp,lMp,ldpc,lpt,ltauc0,lfc = np.log10(A0),np.log10(A1),np.log10(A2),np.log10(A3),np.log10(A4),np.log10(Rp),np.log10(Mp),np.log10(dpc),np.log10(pt),np.log10(tauc0),np.log10(fc)
 
-  guess = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc] #consistent with the paper
+  guess = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lA2,lA3,lA4,lRp,lMp,ldpc,lpt,ltauc0,lfc] #consistent with the paper
   #same order as the x variables in prob and prior functions
   #want to initialise the walkers around these values?
 
@@ -539,16 +553,3 @@ if __name__ == '__main__': #why do these have to be redefined if they were initi
 
     tend = time.time()
     print('Retrieval timing (s): ',tend-tstart)
-
-'''
-    #initialise the sampler
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, backend=backend, pool=pool,  moves=[(emcee.moves.DEMove(sigma=5e-04, gamma0=2.38/np.sqrt(2*ndim)), 0.8), (emcee.moves.DESnookerMove(gammas=2.0), 0.2),])
-
-    #run the mcmc
-    sampler.run_mcmc(pos, nstep, progress = progress)
-
-
-  # timing
-  tend = time.time()
-  print('Retrieval timing (s): ',tend-tstart)
-'''

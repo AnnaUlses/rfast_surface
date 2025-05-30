@@ -4,6 +4,7 @@ import corner
 import h5py
 import sys
 import numpy             as np
+import pandas            as pd
 import matplotlib.pyplot as plt
 from astropy.table       import Table, Column, MaskedColumn
 from astropy.io          import ascii
@@ -142,6 +143,9 @@ threeD   = init_3d(src,ntg)
 tiso = tpars[0]
 A0 = Apars[0]
 A1 = Apars[1]
+A2 = Apars[2]
+A3 = Apars[3]
+A4 = Apars[4]
 # no parameters for cloud optical properties model
 pt,dpc,tauc0 = cpars
 
@@ -170,13 +174,13 @@ lfCH4 = np.log10(10**lpCH4/pmax)
 fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4 = 10**lfN2,10**lfO2,10**lfH2O,10**lfO3,10**lfCO2,10**lfCO,10**lfCH4
 
 
-lRp,lMp,lfc,lA0,lA1,ldpc,lpt,ltauc0 = np.log10(Rp),np.log10(Mp),np.log10(fc),np.log10(A0),np.log10(A1),np.log10(dpc),np.log10(pt),np.log10(tauc0)
+lRp,lMp,lfc,lA0,lA1,lA2,lA3,lA4,ldpc,lpt,ltauc0 = np.log10(Rp),np.log10(Mp),np.log10(fc),np.log10(A0),np.log10(A1),np.log10(A2), np.log10(A3),np.log10(A4),np.log10(dpc),np.log10(pt),np.log10(tauc0)
 
-pp_names  = [r"$\log\,$"+r"$p_{\rm N2}$",r"$\log\,$"+r"$p_{\rm O2}$",r"$\log\,$"+r"$p_{\rm H2O}$",r"$\log\,$"+r"$p_{\rm O3}$",r"$\log\,$"+r"$p_{\rm CO2}$",r"$\log\,$"+r"$p_{\rm CO}$",r"$\log\,$"+r"$p_{\rm CH4}$",r"$\log\,$"+r"$f_{Wbasalt}$",r"$\log\,$"+r"$f_{Granite}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$"]
+pp_names  = [r"$\log\,$"+r"$p_{\rm N2}$",r"$\log\,$"+r"$p_{\rm O2}$",r"$\log\,$"+r"$p_{\rm H2O}$",r"$\log\,$"+r"$p_{\rm O3}$",r"$\log\,$"+r"$p_{\rm CO2}$",r"$\log\,$"+r"$p_{\rm CO}$",r"$\log\,$"+r"$p_{\rm CH4}$",r"$\log\,$"+r"$f_{Wbasalt}$",r"$\log\,$"+r"$f_{Kaolinite}$",r"$\log\,$"+r"$f_{Wgranite}$", r"$\log\,$"+r"$f_{Desert}$", r"$\log\,$"+r"$f_{Ice}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$"]
 vmr_names  = [r"$\log\,$"+r"$f_{\rm N2}$",r"$\log\,$"+r"$f_{\rm O2}$",r"$\log\,$"+r"$f_{\rm H2O}$",r"$\log\,$"+r"$f_{\rm O3}$",r"$\log\,$"+r"$f_{\rm CO2}$",r"$\log\,$"+r"$f_{\rm CO}$",r"$\log\,$"+r"$f_{\rm CH4}$",r"$\log\,$"+r"$A_{\rm 0}$",r"$\log\,$"+r"$R_{\rm p}$",r"$\log\,$"+r"$M_{\rm p}$",r"$\log\,$"+r"$\Delta p_{\rm c}$",r"$\log\,$"+r"$p_{\rm t}$",r"$\log\,$"+r"$\tau_{\rm c}$",r"$\log\,$"+r"$f_{\rm c}$",r"$\log\,$"+r"$p_{0}$"]
 
 
-pp_truths = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lRp,lMp,ldpc,lpt,ltauc0,lfc]
+pp_truths = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lA0,lA1,lA2,lA3,lA4,lRp,lMp,ldpc,lpt,ltauc0,lfc]
 vmr_truths = [lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lA0,lRp,lMp,ldpc,lpt,ltauc0,lfc,lpmax] #lpmax is listed as p0 in vmr_names
 
 
@@ -187,6 +191,25 @@ samples,lnprob = reademceeh5(dirout+fnr+'.h5',nburn,thin)
 
 #import chain data WITHOUT burnin/thin
 samples_nbt,lnprob = reademceeh5(dirout+fnr+'.h5',0,1)
+
+
+cloud = samples[:,:,16]
+for i in range(100):
+	walker = samples[:,i,17]
+	if min(walker) < -0.5:
+		print(i)
+		
+for i in range(100):
+	walker = samples[:,i,16]
+	if min(walker) < 0.15:
+		print(i)
+		
+for i in range(100):
+	walker = samples[:,i,15]
+	if min(walker) < 4:
+		print(i)
+		
+samples = np.delete(samples, (1,7,8,10,11,13,14,18,19,21,24,25,26,33,34,35,37,38,40,41,42,47,48,52,53,54,61,63,64,65,66,72,76,78,79,80,81,84,86,90,93,94,95,96), axis = 1)
 
 # print reduced chi-squared
 lnp_max = np.amax(lnprob)
@@ -213,7 +236,7 @@ for i in range(ndim):
     axes[i].plot(samples[:,j,i],color="black",linewidth=0.5)
     axes[i].set_ylabel(str(pp_names[i]))
     axes[i].set_xlabel('Step')
-plt.savefig('walkers/_walkers.png',format='png')
+plt.savefig('walkers/walkers.png',format='png')
 plt.close()
 
 # plot the walker positions in each step WITHOUT burnin/thin added feb 6
@@ -223,14 +246,35 @@ for i in range(ndim):
     axes[i].plot(samples_nbt[:,j,i],color="black",linewidth=0.5)
     axes[i].set_ylabel(str(pp_names[i]))
     axes[i].set_xlabel('Step')
-plt.savefig('walkers/_walkers_no_burnin_thin.png',format='png', bbox_inches='tight')
+plt.savefig('walkers/walkers_no_burnin_thin.png',format='png', bbox_inches='tight')
 plt.close()
+
+
+#ocean and total land walkers
+
+fig,ax = plt.subplots()
+for r in range(nwalkers):
+	ocean_walk = 1 - 10**samples_nbt[:,r,7] - 10**samples_nbt[:,r,8] - 10**samples_nbt[:,r,9] - 10**samples_nbt[:,r,10] - 10**samples_nbt[:,r,11]
+	ax.plot(ocean_walk, color = 'royalblue', linewidth = 0.5)
+	ax.set_ylabel('Ocean fraction')
+	ax.set_xlabel('Step')
+plt.savefig('walkers/ocean_walkers.png', bbox_inches = 'tight', dpi = 300)
+plt.close()	 
+
+fig,ax = plt.subplots()
+for r in range(nwalkers):
+	land_walk = 10**samples_nbt[:,r,7] + 10**samples_nbt[:,r,8] + 10**samples_nbt[:,r,9] + 10**samples_nbt[:,r,10]
+	ax.plot(land_walk, color = 'mediumseagreen', linewidth = 0.5)
+	ax.set_ylabel('Land fraction')
+	ax.set_xlabel('Step')
+plt.savefig('walkers/land_walkers.png', bbox_inches = 'tight', dpi = 300)
+plt.close()	 
 
 
 # plot the corner plot
 fig = corner.corner(samples.reshape((-1,ndim)), quantiles=[0.16, 0.5, 0.84], show_titles=True,
                     color='black', labels=pp_names, truths=pp_truths)
-fig.savefig('corner_plots/_corner_pp.png',format='png',bbox_inches='tight')
+fig.savefig('corner_plots/corner_pp.png',format='png',bbox_inches='tight')
 plt.close(fig)
 
 #extract just the land fraction parameter distribution(s)
@@ -242,33 +286,109 @@ frac_truth = pp_truths[7]
 
 land1 = 10**(flat[:,7]).reshape(-1,1)
 land2 = 10**(flat[:,8]).reshape(-1,1)
+land3 = 10**(flat[:,9]).reshape(-1,1)
+land4 = 10**(flat[:,10]).reshape(-1,1)
+ice = 10**(flat[:,11]).reshape(-1,1)
 
 fig = corner.corner(land1, quantiles = [0.16, 0.5, 0.84], show_titles = True,
-                    color = 'black', labels = ['W basalt'], truths = [0.1])
+                    color = 'black', labels = ['W basalt'], truths = [0.05])
 fig.savefig('Land_fractions/w_basalt.png',format='png',bbox_inches='tight', dpi = 300)
 fig.tight_layout()
 plt.close(fig)
 
 #for the second land fraction parameter, as a test
 fig = corner.corner(land2, quantiles = [0.16, 0.5, 0.84], show_titles = True,
-                    color = 'black', labels = ['Granite'], truths = [0.2])
-fig.savefig('Land_fractions/granite.png',format='png',bbox_inches='tight', dpi = 300)
+                    color = 'black', labels = ['Kaolinite'], truths = [0.05])
+fig.savefig('Land_fractions/kaolinite.png',format='png',bbox_inches='tight', dpi = 300)
+fig.tight_layout()
+plt.close(fig)
+
+fig = corner.corner(land3, quantiles = [0.16, 0.5, 0.84], show_titles = True,
+                    color = 'black', labels = ['W granite'], truths = [0.1])
+fig.savefig('Land_fractions/w_granite.png',format='png',bbox_inches='tight', dpi = 300)
+fig.tight_layout()
+plt.close(fig)
+
+fig = corner.corner(land4, quantiles = [0.16, 0.5, 0.84], show_titles = True,
+                    color = 'black', labels = ['Desert'], truths = [0.1])
+fig.savefig('Land_fractions/desert.png',format='png',bbox_inches='tight', dpi = 300)
 fig.tight_layout()
 plt.close(fig)
 
 #total land fraction
-summ = land1 + land2
+summ = land1 + land2 + land3 + land4
 
 fig = corner.corner(summ, quantiles = [0.16, 0.5, 0.84], show_titles = True, color = 'black', labels = ['Total land'], truths = [0.3])
 fig.savefig('Land_fractions/total_land.png',format='png',bbox_inches='tight', dpi = 300)
 fig.tight_layout()
 plt.close(fig)
 
+#for ice
+fig = corner.corner(ice, quantiles = [0.16, 0.5, 0.84], show_titles = True,
+                    color = 'black', labels = ['Ice'], truths = [0.1])
+fig.savefig('Land_fractions/ice.png',format='png',bbox_inches='tight', dpi = 300)
+fig.tight_layout()
+plt.close(fig)
+
+ocean = 1 - summ - ice
+
+import pdb
+pdb.set_trace()
+
+data_out = Table([summ[:,0],ice[:,0],ocean[:,0]], names = ['land','ice','ocean'])
+ascii.write(data_out, '../1.8um.csv', format = 'fixed_width', overwrite = True)
+
+surfaces = []
+for a,b,c,d,e in zip(land1,land2,land3,land4,ice):
+	pars = a[0],b[0],c[0],d[0],e[0]
+
+	surfaces.append(surfalb(pars,lam)[0])
+	plt.plot(lam, surfalb(pars,lam)[0])
+
+plt.ylabel('Albedo')
+plt.xlabel('Wavelength ($\mu$m)')
+plt.grid(alpha = 0.5)
+
+plt.legend(facecolor = 'black', labelcolor = 'linecolor')
+plt.savefig('surfaces.png', dpi = 300)
+plt.close()
+
+import scipy.stats
+
+surfaces = np.array(surfaces)
+surfaces = surfaces.T
+
+
+ci_bot = []
+ci_lower = []
+ci_mid = []
+ci_upper = []
+ci_max = []
+for t in surfaces:
+    ci_bot.append(scipy.stats.scoreatpercentile(t, 0, interpolation_method = 'fraction', axis = 0))
+    ci_lower.append(scipy.stats.scoreatpercentile(t, 2.5, interpolation_method = 'fraction', axis = 0))
+    ci_mid.append(scipy.stats.scoreatpercentile(t, 50, interpolation_method = 'fraction', axis = 0))
+    ci_upper.append(scipy.stats.scoreatpercentile(t, 97.5, interpolation_method = 'fraction', axis = 0))
+    ci_max.append(scipy.stats.scoreatpercentile(t, 100, interpolation_method = 'fraction', axis = 0))
+
+fig, ax = plt.subplots()
+ax.fill_between(lam, ci_upper, ci_lower, alpha = 0.6, label = '95% CI')
+ax.plot(lam, ci_mid, color = 'blue')
+ax.set_ylabel('Albedo')
+ax.set_xlabel('Wavelength ($\mu$m)')
+ax.grid(alpha = 0.5)
+ax.legend()
+plt.savefig('95_ci.png',dpi = 300)
+plt.close()  
+
+data_out = Table([lam, ci_mid, ci_upper, ci_lower], names = ['lam', 'ci_mid', 'ci_upper', 'ci_lower'])
+ascii.write(data_out, '../surfaces/surface_full.csv', format = 'fixed_width', overwrite = True)
+
 #corner plot including the total land fraction instead of the components
 #need to add summ variable to the samples chain in index 9
 
                     
-
+'''
 ##added below from the older code on january 11th
 old_array = samples.reshape((-1,ndim))
 print(np.shape(old_array))
@@ -284,7 +404,7 @@ for k in range(0,nit): #converting back to vmr
     for i in range(0,7):
         new_array[k,i] = np.log10(10**old_array[k,i]/pmax)
 
-'''
+
 fig = corner.corner(new_array, quantiles=[0.16, 0.5, 0.84],show_titles=True,
                     color='xkcd:black', labels=vmr_names, truths=vmr_truths)
 fig.savefig('corner_plots/_corner_VMR.png',format='png', bbox_inches='tight')
@@ -334,13 +454,13 @@ gp = -1 # reverts to using Mp if gp not retrieved
 
 # get best-fit parameters
 
-#lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lA0,lRp,lMp,dpc,lpt,ltauc0,lfc = samples[pos_max][0]
-fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,Rp,Mp,fc,A0,A1,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(ldpc),10**(lpt),10**(ltauc0)
+lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lA0,lA1,lA2,lA3,lA4,lRp,lMp,dpc,lpt,ltauc0,lfc = samples_nbt[pos_max][0]
+fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4,Rp,Mp,fc,A0,A1,A2,A3,A4,dpc,pt,tauc0 = 10**(lfN2),10**(lfO2),10**(lfH2O),10**(lfO3),10**(lfCO2),10**(lfCO),10**(lfCH4),10**(lRp),10**(lMp),10**(lfc),10**(lA0),10**(lA1),10**(lA2),10**(lA3),10**(lA4),10**(ldpc),10**(lpt),10**(ltauc0)
 f0[species_r=='N2'],f0[species_r=='o2'],f0[species_r=='h2o'],f0[species_r=='o3'],f0[species_r=='co2'],f0[species_r=='co'],f0[species_r=='ch4'] = fN2,fO2,fH2O,fO3,fCO2,fCO,fCH4
 
 # package parameters for user-defined routines
 tpars = tiso
-Apars = A0,A1
+Apars = A0,A1,A2,A3,A4
 # no parameters for cloud optical properties model
 cpars = pt,dpc,tauc0
 
@@ -393,4 +513,22 @@ ascii.write(data_out,dirout+fnr+'.tab',format='fixed_width',overwrite=True)
 print('Apars = ', Apars)
 print('nwalkers = ', nwalkers)
 print('nstep = ', nstep)
+
+
+#bayesian inference criterion
+
+#data loaded as samples
+#lnprob also loaded
+
+#maximum prob:
+lnp_max = np.amax(lnprob)
+#bic
+BIC = -2*lnp_max + ndim*np.log(len(lam))
+
+print('BIC = ', BIC)
+
+
+
+
+
 

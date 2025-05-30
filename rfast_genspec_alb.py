@@ -88,26 +88,37 @@ if any(As) > 1:
 surface_1 = albedo_model[1] #interpolated reflectance data for first material
 surface_2 = albedo_model[2] #interpolated reflectance data for second material 
 surface_3 = albedo_model[3] #interpolated reflectance data for third material
+surface_4 = albedo_model[4]
+surface_5 = albedo_model[5]
+surface_6 = albedo_model[6]
 
-name1 = albedo_model[4] #names of the surfaces for plotting
-name2 = albedo_model[5]
-name3 = albedo_model[6]
+name1 = albedo_model[7] #names of the surfaces for plotting
+name2 = albedo_model[8]
+name3 = albedo_model[9]
+name4 = albedo_model[10]
+name5 = albedo_model[11]
+name6 = albedo_model[12]
 
-print('Run parameters: ', name1, name2, name3)
-print('Land fractions = ', Apars)
-print('Ocean fractions = ', (1 - Apars[0] - Apars[1]))
+print('Run parameters: ', name1, name2, name3, name4, name5, name6)
+print('Land fractions = ', Apars[0], Apars[1], Apars[2], Apars[3])
+print('Ice fraction = ', Apars[4])
+print('Ocean fractions = ', (1 - Apars[0] - Apars[1] - Apars[2] - Apars[3] - Apars[4]))
 print('Cloud coverage = ', fc)
+print('SNR = ', snr0)
 
 #plot the interpolated reflectance spectra
 plt.plot(lam_hr, surface_1, label = name1, color = 'palevioletred')
 plt.plot(lam_hr, surface_2, label = name2, color = 'mediumslateblue')
 plt.plot(lam_hr, surface_3, label = name3, color = 'mediumseagreen')
+plt.plot(lam_hr, surface_4, label = name4, color = 'purple')
+plt.plot(lam_hr, surface_5, label = name5, color = 'orange')
+plt.plot(lam_hr, surface_6, label = name6, color = 'grey')
 plt.title('Interpolations')
 plt.grid(alpha = 0.5)
 plt.ylabel('Reflectance')
 plt.xlabel('Wavelength ($\mu$m)')
 plt.legend()
-plt.savefig(dirout+'{}_{}'.format(name1,name2)+'_Interp'+'.png',format='png',bbox_inches='tight')
+plt.savefig('interpolations.png',format='png',bbox_inches='tight')
 plt.close()
 
 # cloud optical properties: asymmetry parameter, single scattering albedo, extinction efficiency
@@ -151,7 +162,7 @@ data_out = Table([lam,dlam,F1,F2], names=names)
 ascii.write(data_out,dirout+fns+'.raw',format = 'fixed_width', overwrite = True)
 
 #modified data write line only for albedo_modeling.py purposes
-ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'_A0_'+str(Apars[0])+'.csv', overwrite = True)
+#ascii.write(data_out,dirout+'{}_{}'.format(name1,name2)+'_A0_'+str(Apars[0])+'.csv', overwrite = True)
 
 # document parameters to file
 shutil.copy(filename_scr,dirout+fns+'.log')
@@ -181,5 +192,5 @@ ax.set_xlabel(r'Wavelength (' + u'\u03bc' + 'm)')
 ax.axvspan(0.7, 1.5, alpha = 0.3, color = 'palevioletred', label = 'NIR')
 ax.set_title('Surface Albedo Spectrum: {} & {}'.format(name1,name2))
 ax.legend()
-fig.savefig(dirout+'{}_{}_{}'.format(name1,name2,name3)+'.png',format='png',bbox_inches='tight', dpi = 150)
+fig.savefig('forward_model.png',format='png',bbox_inches='tight', dpi = 150)
 plt.close()

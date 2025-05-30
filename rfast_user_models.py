@@ -59,7 +59,7 @@ def surfalb(Apars,lam):
   ### user edits below ###
 
   # unpack user-defined albedo parameters; must agree with rfast_inputs
-  A0 = Apars
+  A0,A1,A2,A3,A4 = Apars
 
   # number of wavelength points
   Nlam  = lam.shape[0]
@@ -68,12 +68,12 @@ def surfalb(Apars,lam):
   #import the different surfaces, data is stored under df.wave and df.ref for wavelength and reflectance respectively
 
   #speclib sources, waters
- # ice = pd.read_csv('ice.csv')
+  #ice = pd.read_csv('ice.csv')
   #sea_water = pd.read_csv('sea_water.csv')
   #snow = pd.read_csv('granular_snow.csv')
 
   #speclib sources, rocks
-  granite = pd.read_csv('granite_solid.csv')
+  #granite = pd.read_csv('granite_solid.csv')
   #basalt = pd.read_csv('basalt.csv')
   #chalk = pd.read_csv('chalk.csv')
   #siltstone = pd.read_csv('siltstone.csv')
@@ -85,37 +85,48 @@ def surfalb(Apars,lam):
   #shrub = pd.read_csv('shrub.csv')
 
   #usgs surfaces
-  #water_ice = pd.read_csv('water_ice_usgs.csv')
+  water_ice = pd.read_csv('water_ice_usgs.csv')
   open_ocean = pd.read_csv('open_ocean_usgs.csv')
   #melting_ocean = pd.read_csv('melting_snow_usgs.csv')
   weathered_basalt = pd.read_csv('basalt_weathered_usgs.csv')
   #fresh_basalt = pd.read_csv('basalt_fresh_usgs.csv')
-  #granite_h2 = pd.read_csv('granite_h2.csv')
+  weathered_granite = pd.read_csv('granite_h2.csv')
 
   #minerals
   #quartz = pd.read_csv('quartz.csv')
   #k_spar = pd.read_csv('k_feldspar.csv')
   #quartz_sand = pd.read_csv('quartz_sand.csv')
+  kaolinite = pd.read_csv('kaolinite.csv')
+  sahara = pd.read_csv('sahara_desert.csv')
 
 
   #just load in the files of interest at any given time, uncomment them from above
   surface1 = weathered_basalt
-  surface2 = granite
-  surface3 = open_ocean
+  surface2 = kaolinite
+  surface3 = weathered_granite
+  surface4 = sahara
+  surface5 = water_ice
+  surface6 = open_ocean
 
 
   name1 = 'Weathered basalt' #names of the surfaces for plotting
-  name2 = 'Granite'
-  name3 = 'Ocean'
+  name2 = 'Kaolinite'
+  name3 = 'Weathered granite'
+  name4 = 'Desert'
+  name5 = 'Ice'
+  name6 = 'Ocean'
   
   #interpolate the datasets, while making sure they are the same dimensions over the same wavelength range
   #all reflectance values are loaded in as fractions (feb 15th learned the hard way)
   surface_1 = np.interp(lam, surface1.wave, surface1.ref)
   surface_2 = np.interp(lam, surface2.wave, surface2.ref) 
   surface_3 = np.interp(lam, surface3.wave, surface3.ref)
+  surface_4 = np.interp(lam, surface4.wave, surface4.ref)
+  surface_5 = np.interp(lam, surface5.wave, surface5.ref)
+  surface_6 = np.interp(lam, surface6.wave, surface6.ref)
 
   #define a combination of the two interpolated arrays, Apars is now land fraction
-  As = Apars[0]*(surface_1) + Apars[1]*(surface_2) + (1 - Apars[0] - Apars[1])*(surface_3)
+  As = Apars[0]*(surface_1) + Apars[1]*(surface_2) + Apars[2]*(surface_3) + Apars[3]*(surface_4) + Apars[4]*(surface_5) + (1 - Apars[0] - Apars[1] - Apars[2] - Apars[3] - Apars[4])*(surface_6)
 
   #print(As.shape)
   #As = np.zeros(Nlam) #grey albedo model
@@ -124,7 +135,7 @@ def surfalb(Apars,lam):
   ### user edits above ### 
   ########################
 
-  return As, surface_1, surface_2, surface_3, name1, name2, name3
+  return As, surface_1, surface_2, surface_3, surface_4, surface_5, surface_6, name1, name2, name3, name4, name5, name6
 
 #
 #
