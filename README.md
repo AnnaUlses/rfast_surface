@@ -4,7 +4,7 @@ Code has been modified to run forward models and retrievals using a user-defined
 
 **Description of changeable files** <br/>
 ```rfast_inputs.scr``` is the inputs file with user-chosen parameters <br/>
-```rfast_user_model.py``` script with models for the forward model, surface albedo parametrisation can be modified through '''surfalb''' <br/>
+```rfast_user_model.py``` script with models for the forward model, surface albedo parametrisation can be modified through ```surfalb``` function <br/>
 ```rfast_genspec_alb.py``` is the forward modeling script <br/>
 ```rfast_noise.py``` generates noisy spectra with user specified noise model <br/>
 ```rfast_retrieve_pp.py``` main script for MCMC analysis - outputs a .h5 file with the chain data <br/>
