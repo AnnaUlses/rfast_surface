@@ -18,5 +18,5 @@ Code has been modified to run forward models and retrievals using a user-defined
 4. ```rfast_analyze_pp.py rfast_inputs.scr```
 5. ```spectra_gen_pp.py rfast_inputs.scr``` <br/>
 
-Additionally, this code relies on a co-located opacities file called ```hires_opacities```, which can be found in the main [rfast](https://github.com/hablabx/rfast) github.
+This code relies on a co-located opacities file called ```hires_opacities```. This and installation instructions can be found in the main [rfast](https://github.com/hablabx/rfast) github.
 
