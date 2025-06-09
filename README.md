@@ -1,5 +1,5 @@
 # rfast_surface
-Modified version of the open source radiative transfer code from [rfast](https://github.com/hablabx/rfast) (**not my code**)
+Modified version of the open source radiative transfer code created by Tyler Robinson and Arnaud Salvador: [Robinson & Salvador](https://doi.org/10.3847/PSJ/acac9a) 
 Code has been modified to run forward models and retrievals using a user-defined albedo model (defined in user_models). Currently set-up for a five parameter surface parametrisation, further parameters will require small modifications in ```rfast_genspec_alb.py```, ```rfast_retrieve_pp.py``` and ```rfast_analyze_pp.py```. Under the folder ```agnostic_surface``` there are specific versions of ```genspec```, ```user_models```, ```retrieve```, ```analyze```, and ```spectra_gen``` to use for the agnostic surface configuration of the model. It is currently set for a linear parameterisation.
 
 **Description of changeable files** <br/>
