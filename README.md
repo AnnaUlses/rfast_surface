@@ -12,12 +12,15 @@ Code has been modified to run forward models and retrievals using a user-defined
 ```rfast_analyze_pp.py``` first analysis script, generates corner plots, individual posteriors for land fractions, and fitted spectra <br/>
 ```spectra_gen_pp.py``` second analysis script for plotting confidence intervals of fits <br/>
 
-**How to run**
+**How to run** 
 1. ```rfast_genspec_alb.py rfast_inputs.scr```
 2. ```rfast_noise.py rfast_inputs.scr```
 3. ```rfast_retrieve_pp.py rfast_inputs.scr```
 4. ```rfast_analyze_pp.py rfast_inputs.scr```
 5. ```spectra_gen_pp.py rfast_inputs.scr``` <br/>
 
-This code relies on a co-located opacities file called ```hires_opacities```. This and installation instructions can be found in the main [rfast](https://github.com/hablabx/rfast) github.
+This code relies on a co-located opacities file called ```hires_opacities```. This and installation instructions can be found in the main [rfast](https://github.com/hablabx/rfast) github. <br/>
+
+**Publications that use this code** <br/>
+Stay tuned
 
