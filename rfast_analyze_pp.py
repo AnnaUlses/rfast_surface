@@ -191,25 +191,7 @@ samples,lnprob = reademceeh5(dirout+fnr+'.h5',nburn,thin)
 
 #import chain data WITHOUT burnin/thin
 samples_nbt,lnprob = reademceeh5(dirout+fnr+'.h5',0,1)
-
-
-cloud = samples[:,:,16]
-for i in range(100):
-	walker = samples[:,i,17]
-	if min(walker) < -0.5:
-		print(i)
 		
-for i in range(100):
-	walker = samples[:,i,16]
-	if min(walker) < 0.15:
-		print(i)
-		
-for i in range(100):
-	walker = samples[:,i,15]
-	if min(walker) < 4:
-		print(i)
-		
-samples = np.delete(samples, (1,7,8,10,11,13,14,18,19,21,24,25,26,33,34,35,37,38,40,41,42,47,48,52,53,54,61,63,64,65,66,72,76,78,79,80,81,84,86,90,93,94,95,96), axis = 1)
 
 # print reduced chi-squared
 lnp_max = np.amax(lnprob)
@@ -228,6 +210,8 @@ if clr:
   clrs = np.sum(np.exp(xi),axis=2) + np.exp(-np.sum(xi,axis=2))
   clrs = np.repeat(clrs[:,:,np.newaxis], len(gind), axis=2)
   samples[:,:,gind] = np.log10(np.divide(np.exp(samples[:,:,gind]),clrs))
+
+#plotting scheme requires co-located folders called 'walkers', 'corner_plots', 'Land_fractions', and 'spectra'
 
 # plot the walker positions in each step
 fig, axes = plt.subplots(ndim, 1, figsize=(8, 4 * ndim), tight_layout=True)
@@ -332,9 +316,6 @@ plt.close(fig)
 
 ocean = 1 - summ - ice
 
-import pdb
-pdb.set_trace()
-
 data_out = Table([summ[:,0],ice[:,0],ocean[:,0]], names = ['land','ice','ocean'])
 ascii.write(data_out, '../1.8um.csv', format = 'fixed_width', overwrite = True)
 
@@ -382,73 +363,8 @@ plt.savefig('95_ci.png',dpi = 300)
 plt.close()  
 
 data_out = Table([lam, ci_mid, ci_upper, ci_lower], names = ['lam', 'ci_mid', 'ci_upper', 'ci_lower'])
-ascii.write(data_out, '../surfaces/surface_full.csv', format = 'fixed_width', overwrite = True)
+ascii.write(data_out, 'surface.csv', format = 'fixed_width', overwrite = True)
 
-#corner plot including the total land fraction instead of the components
-#need to add summ variable to the samples chain in index 9
-
-                    
-'''
-##added below from the older code on january 11th
-old_array = samples.reshape((-1,ndim))
-print(np.shape(old_array))
-nit = nstep*nwalkers
-
-print('nit =', nit)
-new_array = np.ones([nit,16]) #changed to nit+1
-new_array[:,:15] = old_array[:,:] #changed to nit
-
-for k in range(0,nit): #converting back to vmr
-    pmax = 10**old_array[k,0]+10**old_array[k,1]+10**old_array[k,2]+10**old_array[k,3]+10**old_array[k,4]+10**old_array[k,5]+10**old_array[k,6]
-    new_array[k,14] = np.log10(pmax)
-    for i in range(0,7):
-        new_array[k,i] = np.log10(10**old_array[k,i]/pmax)
-
-
-fig = corner.corner(new_array, quantiles=[0.16, 0.5, 0.84],show_titles=True,
-                    color='xkcd:black', labels=vmr_names, truths=vmr_truths)
-fig.savefig('corner_plots/_corner_VMR.png',format='png', bbox_inches='tight')
-plt.close(fig)
-
-# plot the gas only corner plots
-fig = corner.corner(old_array[:,0:7], quantiles=[0.16, 0.5, 0.84],show_titles=True,
-                    color='xkcd:black', labels=pp_names[0:7], truths=pp_truths[0:7])
-fig.savefig('corner_plots/_corner_PP_gas_only.png',format='png',bbox_inches='tight')
-plt.close(fig)
-
-
-fig = corner.corner(new_array[:,0:7], quantiles=[0.16, 0.5, 0.84],show_titles=True,
-                    color='xkcd:black', labels=vmr_names[0:7], truths=vmr_truths[0:7])
-fig.savefig('corner_plots/_corner_VMR_gas_only.png',format='png',bbox_inches='tight')
-plt.close(fig)
-
-#create gas + pressure only PP + VMR corner plot
-pp_gp_names  = [r"$\log\,$"+r"$p_{\rm N2}$",r"$\log\,$"+r"$p_{\rm O2}$",r"$\log\,$"+r"$p_{\rm H2O}$",r"$\log\,$"+r"$p_{\rm O3}$",r"$\log\,$"+r"$p_{\rm CO2}$",r"$\log\,$"+r"$p_{\rm CO}$",r"$\log\,$"+r"$p_{\rm CH4}$",r"$\log\,$"+r"$p_{0}$"]
-
-pp_gp_truths = [lpN2,lpO2,lpH2O,lpO3,lpCO2,lpCO,lpCH4,lpmax]
-
-gp_pp_array = np.zeros([nit,8])
-gp_pp_array[:,:8] = old_array[:,:8]
-for k in range(0,nit):
-    pmax = 10**gp_pp_array[k,0]+10**gp_pp_array[k,1]+10**gp_pp_array[k,2]+10**gp_pp_array[k,3]+10**gp_pp_array[k,4]+10**gp_pp_array[k,5]+10**gp_pp_array[k,6]
-    gp_pp_array[k,7] = np.log10(pmax)
-
-fig = corner.corner(gp_pp_array, quantiles=[0.16, 0.5, 0.84],show_titles=True, color='xkcd:black', labels=pp_gp_names, truths=pp_gp_truths)
-fig.savefig('corner_plots/_corner_PP_gp.png',format='png',bbox_inches='tight')
-plt.close(fig)
-
-vmr_gp_names  = [r"$\log\,$"+r"$f_{\rm N2}$",r"$\log\,$"+r"$f_{\rm O2}$",r"$\log\,$"+r"$f_{\rm H2O}$",r"$\log\,$"+r"$f_{\rm O3}$",r"$\log\,$"+r"$f_{\rm CO2}$",r"$\log\,$"+r"$f_{\rm CO}$",r"$\log\,$"+r"$f_{\rm CH4}$",r"$\log\,$"+r"$p_{0}$"]
-
-vmr_gp_truths = [lfN2,lfO2,lfH2O,lfO3,lfCO2,lfCO,lfCH4,lpmax]
-
-gp_vmr_array = np.zeros([nit,8])
-gp_vmr_array[:,:8] = new_array[:,:8]
-gp_vmr_array[:,7] = new_array[:,14]
-
-fig = corner.corner(gp_vmr_array, quantiles=[0.16, 0.5, 0.84],show_titles=True, color='xkcd:black', labels=vmr_gp_names, truths=vmr_gp_truths)
-fig.savefig('corner_plots/_corner_VMR_gp.png',format='png',bbox_inches='tight')
-plt.close(fig)
-'''
 # plot best-fit model and residuals
 gp = -1 # reverts to using Mp if gp not retrieved
 
@@ -514,18 +430,6 @@ print('Apars = ', Apars)
 print('nwalkers = ', nwalkers)
 print('nstep = ', nstep)
 
-
-#bayesian inference criterion
-
-#data loaded as samples
-#lnprob also loaded
-
-#maximum prob:
-lnp_max = np.amax(lnprob)
-#bic
-BIC = -2*lnp_max + ndim*np.log(len(lam))
-
-print('BIC = ', BIC)
 
 
 
