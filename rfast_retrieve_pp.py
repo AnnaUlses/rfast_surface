@@ -370,7 +370,7 @@ def Fx(x,y):
                     src,sigma_interp,cia_interp,lam,pf=pf,tf=tf)
 
   # degrade resolution
-  F_out = kernel_convol(kern,F1) ##changed to F1 on january 11th, degrades from 1752 to 158
+  F_out = kernel_convol(kern,F2) #back in flux ratio
 
   # "distance" scaling for thermal emission case
   if (src == 'thrm'):

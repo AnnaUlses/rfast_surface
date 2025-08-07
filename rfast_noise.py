@@ -41,11 +41,11 @@ F1          = data['col4'][:] #albedo
 F2          = data['col5'][:] #flux ratio
 
 # snr0 constant w/wavelength case
-if( len(snr0) == 1 ): #CHANGED F2 TO F1 HERE SO ITS CALCULATING ERROR OFF ALBEDO
+if( len(snr0) == 1 ):
   if (ntype != 'cppm'):
-    err = noise(lam0,snr0,lam,dlam,F1,Ts,ntype)
+    err = noise(lam0,snr0,lam,dlam,F2,Ts,ntype)
   else:
-    err    = np.zeros(F1.shape[0])
+    err    = np.zeros(F2.shape[0])
     err[:] = 1/snr0
 else: # otherwise snr0 is bandpass dependent
   err = np.zeros(len(lam))
@@ -56,16 +56,16 @@ else: # otherwise snr0 is bandpass dependent
     else:
       lam0i = lam0[i]
     if (ntype != 'cppm'):
-      erri      = noise(lam0i,snr0[i],lam,dlam,F1,Ts,ntype)
+      erri      = noise(lam0i,snr0[i],lam,dlam,F2,Ts,ntype)
       err[ilam] = erri[ilam]
     else:
       err[ilam] = 1/snr0[i]
 
 # generate faux spectrum, with random noise if requested
-data = np.copy(F1)
+data = np.copy(F2)
 if rnd:
   for k in range(0,len(lam)):
-    data[k]  = np.random.normal(F1[k], err[k], 1)
+    data[k]  = np.random.normal(F2[k], err[k], 1)
     if data[k] < 0:
       data[k] = 0.
 
@@ -94,12 +94,12 @@ shutil.copy(filename_scr,dirout+fnn+'.log')
 
 # plot faux data
 if (src == 'diff' or src == 'scnd' or src == 'cmbn' or src == 'phas'):
-  ylab = 'Albedo'
+  ylab = 'Planet-to-star flux ratio'
 if (src == 'thrm'):
   ylab = r'Specific flux (W/m$^2$/${\rm \mu}$m)'
 if (src == 'trns'):
   ylab = r'Transit depth'
-plt.errorbar(lam, data, yerr=err, fmt=".k") #data should now be albedo
+plt.errorbar(lam, data, yerr=err, fmt=".k") #back in flux ratio
 plt.ylabel(ylab)
 plt.grid(alpha = 0.5)
 plt.xlabel(r'Wavelength (' + u'\u03bc' + 'm)')

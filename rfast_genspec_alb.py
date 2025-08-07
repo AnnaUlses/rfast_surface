@@ -178,19 +178,18 @@ if (src == 'trns'):
 
 # plot raw spectrum
 if (src == 'diff' or src == 'scnd' or src == 'cmbn' or src == 'phas'):
-  ylab = 'Albedo'
+  ylab = 'Planet-to-star flux ratio'
 if (src == 'thrm'):
   ylab = r'Specific flux (W/m$^2$/${\rm \mu}$m)'
 if (src == 'trns'):
   ylab = r'Transit depth'
 
 fig, ax = plt.subplots()
-ax.plot(lam, F1, c = 'cornflowerblue')
+ax.plot(lam, F2, c = 'cornflowerblue')
 ax.set_ylabel(ylab)
 ax.grid(alpha = 0.5)
 ax.set_xlabel(r'Wavelength (' + u'\u03bc' + 'm)')
 ax.axvspan(0.7, 1.5, alpha = 0.3, color = 'palevioletred', label = 'NIR')
-ax.set_title('Surface Albedo Spectrum: {} & {}'.format(name1,name2))
 ax.legend()
 fig.savefig('forward_model.png',format='png',bbox_inches='tight', dpi = 150)
 plt.close()
