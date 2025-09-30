@@ -22,5 +22,5 @@ Code has been modified to run forward models and retrievals using a user-defined
 This code relies on a co-located opacities file called ```hires_opacities```. This and installation instructions can be found in the main [rfast](https://github.com/hablabx/rfast) github. <br/>
 
 **Publications that use this code** <br/>
-Stay tuned
+https://doi.org/10.3847/1538-4357/adec69
 
