@@ -1,7 +1,7 @@
-# rfast_surface
+# rfast_flux_grey
 Modified version of the open source radiative transfer code created by Tyler Robinson and Arnaud Salvador: [Robinson & Salvador 2023](https://doi.org/10.3847/PSJ/acac9a)  <br/>
 
-Code has been modified to run forward models and retrievals using a user-defined albedo model (defined in user_models). Currently set-up for a five parameter surface parametrisation, further parameters will require small modifications in ```rfast_genspec_alb.py```, ```rfast_retrieve_pp.py``` and ```rfast_analyze_pp.py```. Under the folder ```agnostic_surface``` there are specific versions of ```genspec```, ```user_models```, ```retrieve```, ```analyze```, and ```spectra_gen``` to use for the agnostic surface configuration of the model. It is currently set for a linear parameterisation.
+Code has been modified to run forward models and retrievals using a grey surface albedo. Retrievals are configured for flux ratio (Fp/Fs) spectra. 
 
 **Description of changeable files** <br/>
 ```rfast_inputs.scr``` is the inputs file with user-chosen parameters <br/>
@@ -22,5 +22,5 @@ Code has been modified to run forward models and retrievals using a user-defined
 This code relies on a co-located opacities file called ```hires_opacities```. This and installation instructions can be found in the main [rfast](https://github.com/hablabx/rfast) github. <br/>
 
 **Publications that use this code** <br/>
-https://doi.org/10.3847/1538-4357/adec69
+Recent paper submitted to Astrobiology: [https://arxiv.org/pdf/2507.14771](url)
 
