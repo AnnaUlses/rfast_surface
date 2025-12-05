@@ -1491,7 +1491,7 @@ def noise(lam0,snr0,lam,dlam,FpFs,Ts,ntype):
   elif (ntype == 'cerr'):
     FpFs_interp  = interpolate.interp1d(lam,FpFs)
     err          = np.zeros(lam.shape[0])
-    err[:]       = 0.22/snr0 # Constant error based around approx. continuium value around 1 micron
+    err[:]       = 3.5e-10/snr0 # Constant error based around approx. continuium value around 1 micron
   elif (ntype == 'plan'):
     FpFs_interp  = interpolate.interp1d(lam,FpFs)
     res_interp   = interpolate.interp1d(lam,lam/dlam)
